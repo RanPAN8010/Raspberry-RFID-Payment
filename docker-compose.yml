@@ -1,0 +1,9 @@
+services:
+  rfid-system:
+    build: .
+    container_name: rfid_payment_app
+    ports:
+      - "8080:8080"  # 将容器的 8080 端口映射到电脑/树莓派的 8080
+    volumes:
+      - ./data:/app/data  # 核心：将本地 data 文件夹映射到容器，保证数据库文件不丢失
+    restart: always
