@@ -67,4 +67,22 @@ public class UserDAO {
         // 如果没找到，返回 null
         return null; 
     }
+
+	/**
+     * 更新用户余额 (用于充值和扣款)
+     */
+    public boolean updateBalance(String rfidTag, double newBalance) {
+        String sql = "UPDATE users SET balance = ? WHERE rfid_tag = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDouble(1, newBalance);
+            pstmt.setString(2, rfidTag);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("更新余额失败: " + e.getMessage());
+            return false;
+        }
+    }
+	
 }
