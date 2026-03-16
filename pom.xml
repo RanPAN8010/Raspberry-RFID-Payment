@@ -19,7 +19,13 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.45.1.0</version>
+            
         </dependency>
+        <dependency>
+            <groupId>com.pi4j</groupId>
+            <artifactId>pi4j-core</artifactId>
+        <version>1.4</version>
+    </dependency>
     </dependencies>
 
     <build>

@@ -51,7 +51,7 @@ public class SimpleHttpServer {
             if (query != null && query.startsWith("tag=")) {
                 String rfidTag = query.split("=")[1];
                 
-                // 调用组员写的 DAO 方法
+                
                 User user = userDAO.getUserByRfid(rfidTag);
 
                 if (user != null) {
