@@ -7,7 +7,7 @@ import java.sql.Statement;
 
 public class DBConnection {
     // 数据库文件路径，项目根目录下会自动生成 payment_system.db
-    private static final String URL = "jdbc:sqlite:payment_system.db";
+    private static final String URL = "jdbc:sqlite:data/payment_system.db";
     private static Connection connection = null;
 
     /**

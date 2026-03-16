@@ -44,9 +44,14 @@ public class UserDAO {
      */
     public User getUserByRfid(String rfidTag) {
         String sql = "SELECT * FROM users WHERE rfid_tag = ?";
+        Connection conn = DBConnection.getConnection();
         
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        // 核心修复：如果连接失败，直接返回 null，不要执行后续代码
+        if (conn == null) {
+            System.err.println("无法获取数据库连接，查询中止。");
+            return null; 
+        }
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
             pstmt.setString(1, rfidTag);
             ResultSet rs = pstmt.executeQuery();
@@ -70,7 +75,7 @@ public class UserDAO {
         // 如果没找到，返回 null
         return null; 
     }
-
+    
 	/**
      * 更新用户余额 (用于充值和扣款)
      */
@@ -87,5 +92,4 @@ public class UserDAO {
             return false;
         }
     }
-	
 }

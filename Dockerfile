@@ -1,20 +1,27 @@
-# 使用维护更好的 Eclipse Temurin 镜像
+# 第一阶段：构建阶段
 FROM maven:3.8.6-eclipse-temurin-8 AS build
 WORKDIR /app
 
-# 直接复制所有项目文件并编译
-# 这样即便部分依赖下载慢，Maven 也会重试，而不是直接卡在 go-offline
-COPY . .
+# 复制 pom.xml 和源码
+COPY pom.xml .
+COPY src ./src
+
+# 执行打包，assembly 插件会生成 *-jar-with-dependencies.jar
 RUN mvn clean package -DskipTests
 
-# 运行阶段
+# 第二阶段：运行阶段
 FROM eclipse-temurin:8-jre
 WORKDIR /app
 
-# 复制编译好的 target 文件夹和 pom.xml
-COPY --from=build /app/target /app/target
-COPY --from=build /app/pom.xml /app/pom.xml
+# 创建数据文件夹，确保 SQLite 数据库有地方放
+RUN mkdir -p data
 
-# 暴露端口并运行主类
+# 从构建阶段复制生成的“带依赖”的 JAR 包
+# 注意：这里的 jar 文件名必须与你 pom.xml 里的 artifactId 和 version 对应
+COPY --from=build /app/target/service-reseau-2026-0.0.1-SNAPSHOT-jar-with-dependencies.jar app.jar
+
+# 暴露 Web 服务器端口
 EXPOSE 8080
-ENTRYPOINT ["java", "-cp", "target/classes:target/dependency/*", "Raspberry.APP"]
+
+# 直接运行 Fat JAR
+ENTRYPOINT ["java", "-jar", "app.jar"]
