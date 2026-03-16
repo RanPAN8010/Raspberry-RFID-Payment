@@ -1,4 +1,4 @@
-package model;
+package Raspberry.model;
 
 public class User {
 

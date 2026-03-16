@@ -1,4 +1,4 @@
-package DAO;
+package Raspberry.DAO;
 
 public class UserDAO {
 
