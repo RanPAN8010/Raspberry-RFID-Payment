@@ -3,6 +3,7 @@ import com.sun.net.httpserver.HttpServer;
 
 import Raspberry.DAO.UserDAO;
 import Raspberry.model.User;
+import Raspberry.service.PaymentService;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
@@ -10,7 +11,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 public class SimpleHttpServer {
-	private static UserDAO userDAO = new UserDAO();
+	private PaymentService paymentService = new PaymentService();
 	
 	public void start(int port) {
         try {
@@ -42,27 +43,46 @@ public class SimpleHttpServer {
     }
 
     // 处理支付请求 (localhost:8080/pay)
-    static class PayHandler implements HttpHandler {
+    class PayHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-        	String query = exchange.getRequestURI().getQuery(); // 获取 URL 参数，如 tag=123
+            String query = exchange.getRequestURI().getQuery();
             String response;
 
-            if (query != null && query.startsWith("tag=")) {
-                String rfidTag = query.split("=")[1];
-                
-                
-                User user = userDAO.getUserByRfid(rfidTag);
+            // 改进后的解析逻辑
+            if (query != null) {
+                String rfidTag = null;
+                double amount = 0.0;
 
-                if (user != null) {
-                    response = "<h1>User Found</h1>" +
-                               "<p>Username: " + user.getUsername() + "</p>" +
-                               "<p>Balance: $" + user.getBalance() + "</p>";
+                // 将 query 按 & 分割，例如 ["tag=8888", "amount=10"]
+                String[] params = query.split("&");
+                for (String param : params) {
+                    String[] pair = param.split("=");
+                    if (pair.length > 1) {
+                        if (pair[0].equals("tag")) rfidTag = pair[1];
+                        if (pair[0].equals("amount")) amount = Double.parseDouble(pair[1]);
+                    }
+                }
+
+                if (rfidTag != null) {
+					// 调用 PaymentService 进行处理
+                    boolean success = paymentService.processPayment(rfidTag, amount);
+                    
+                    // 重新获取用户信息来显示最新余额
+                    User user = new UserDAO().getUserByRfid(rfidTag);
+
+                    if (success && user != null) {
+                        response = "<h1>✅ Payment Success</h1>" +
+                                   "<p>User: " + user.getUsername() + "</p>" +
+                                   "<p>New Balance: €" + user.getBalance() + "</p>";
+                    } else {
+                        response = "<h1>❌ Error</h1><p>User [" + rfidTag + "] not found or balance insufficient.</p>";
+                    }
                 } else {
-                    response = "<h1>Error</h1><p>User with Tag [" + rfidTag + "] not found.</p>";
+                    response = "<h1>Invalid Parameters</h1><p>Usage: /pay?tag=8888&amount=10</p>";
                 }
             } else {
-                response = "<h1>Invalid Request</h1><p>Please use /pay?tag=YOUR_ID</p>";
+                response = "<h1>No Parameters Provided</h1>";
             }
             sendResponse(exchange, response);
         }
