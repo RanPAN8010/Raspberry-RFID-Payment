@@ -10,6 +10,9 @@ import java.sql.SQLException;
 
 public class UserDAO {
 
+	public UserDAO() {
+		// TODO Auto-generated constructor stub
+	}
     /**
      * 1. 添加新用户 (对应文档中管理员的功能)
      */

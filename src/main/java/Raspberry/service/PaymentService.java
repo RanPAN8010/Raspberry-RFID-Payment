@@ -1,7 +1,11 @@
 package Raspberry.service;
+import Raspberry.DAO.UserDAO;
+import Raspberry.model.User;
+
 
 public class PaymentService {
-
+    private UserDAO userDAO;
+    
     public PaymentService() {
         this.userDAO = new UserDAO();
     }
