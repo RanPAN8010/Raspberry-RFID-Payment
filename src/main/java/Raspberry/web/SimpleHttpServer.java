@@ -23,7 +23,10 @@ public class SimpleHttpServer {
             server.createContext("/", new RootHandler());
 
             // 3. 路由配置：支付 API 测试 (例如: /pay?id=123)
-            server.createContext("/pay", new PayHandler());
+            server.createContext("/pay", new PaiementHandler());
+            
+            // 绑定注册接口：/admin/register
+            server.createContext("/admin/enregistrement", new EnregistrementHandler());
 
             server.setExecutor(null); // 使用默认执行器
             server.start();
@@ -32,64 +35,8 @@ public class SimpleHttpServer {
             System.err.println("服务器启动失败: " + e.getMessage());
         }
     }
-
-    // 处理首页请求 (localhost:8080/)
-    static class RootHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            String response = "<h1>Welcome to RFID Payment System</h1><p>Status: Running</p>";
-            sendResponse(exchange, response);
-        }
-    }
-
-    // 处理支付请求 (localhost:8080/pay)
-    class PayHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            String query = exchange.getRequestURI().getQuery();
-            String response;
-
-            // 改进后的解析逻辑
-            if (query != null) {
-                String rfidTag = null;
-                double amount = 0.0;
-
-                // 将 query 按 & 分割，例如 ["tag=8888", "amount=10"]
-                String[] params = query.split("&");
-                for (String param : params) {
-                    String[] pair = param.split("=");
-                    if (pair.length > 1) {
-                        if (pair[0].equals("tag")) rfidTag = pair[1];
-                        if (pair[0].equals("amount")) amount = Double.parseDouble(pair[1]);
-                    }
-                }
-
-                if (rfidTag != null) {
-					// 调用 PaymentService 进行处理
-                    boolean success = paymentService.processPayment(rfidTag, amount);
-                    
-                    // 重新获取用户信息来显示最新余额
-                    User user = new UserDAO().getUserByRfid(rfidTag);
-
-                    if (success && user != null) {
-                        response = "<h1>✅ Payment Success</h1>" +
-                                   "<p>User: " + user.getUsername() + "</p>" +
-                                   "<p>New Balance: €" + user.getBalance() + "</p>";
-                    } else {
-                        response = "<h1>❌ Error</h1><p>User [" + rfidTag + "] not found or balance insufficient.</p>";
-                    }
-                } else {
-                    response = "<h1>Invalid Parameters</h1><p>Usage: /pay?tag=8888&amount=10</p>";
-                }
-            } else {
-                response = "<h1>No Parameters Provided</h1>";
-            }
-            sendResponse(exchange, response);
-        }
-    }
-
     // 封装发送响应的方法
-    private static void sendResponse(HttpExchange exchange, String response) throws IOException {
+    public static void sendResponse(HttpExchange exchange, String response) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
         exchange.sendResponseHeaders(200, response.getBytes().length);
         OutputStream os = exchange.getResponseBody();
