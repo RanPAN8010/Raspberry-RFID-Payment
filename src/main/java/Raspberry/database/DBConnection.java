@@ -44,11 +44,22 @@ public class DBConnection {
                 + "active INTEGER DEFAULT 1"       // 1 为激活，0 为禁用 
                 + ");";
 
+        String sqlTransactions = "CREATE TABLE IF NOT EXISTS transactions ("
+                + " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + " rfid_tag TEXT NOT NULL,"
+                + " type TEXT NOT NULL," // 'PAIEMENT' 或 'RECHARGE'
+                + " montant REAL NOT NULL,"
+                + " date_heure DATETIME DEFAULT CURRENT_TIMESTAMP"
+                + ");";
+        
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(createTableSQL);
+            stmt.execute(sqlTransactions);
             System.out.println("数据库表结构已准备就绪。");
         } catch (SQLException e) {
             System.err.println("创建表失败: " + e.getMessage());
         }
+
+        
     }
 }

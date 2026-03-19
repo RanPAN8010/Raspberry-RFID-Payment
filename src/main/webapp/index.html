@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard RFID</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; text-align: center; padding: 50px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-block; }
+        .btn { display: block; width: 250px; padding: 15px; margin: 10px auto; text-decoration: none; color: white; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .btn-list { background: #3498db; }
+        .btn-history { background: #2ecc71; }
+        .btn-reg { background: #e67e22; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+        h1 { color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 RFID Admin Panel</h1>
+        <p>Statut du Système : <span style="color: #27ae60;">En ligne</span></p>
+        <hr>
+        <a href="/admin/liste" class="btn btn-list">Liste des Utilisateurs</a>
+        <a href="/admin/historique" class="btn btn-history">Historique des Transactions</a>
+        <a href="/admin/enregistrement" class="btn btn-reg">Nouvel Enregistrement</a>
+        <p style="font-size: 0.8em; color: #95a5a6; margin-top: 20px;">Serveur Raspberry Pi - 2026</p>
+    </div>
+</body>
+</html>

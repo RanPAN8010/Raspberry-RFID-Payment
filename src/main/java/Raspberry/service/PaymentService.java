@@ -35,6 +35,7 @@ public class PaymentService {
         double newBalance = user.getBalance() - amount;
         if (userDAO.updateBalance(rfidTag, newBalance)) {
             System.out.println("✅ 支付成功！扣除: €" + amount + "，剩余余额: €" + newBalance);
+            userDAO.addTransaction(rfidTag, "PAIEMENT", amount);
             return true;
         } else {
             System.out.println("❌ 支付失败：系统错误。");
@@ -56,6 +57,7 @@ public class PaymentService {
             double newBalance = user.getBalance() + amount;
             if (userDAO.updateBalance(rfidTag, newBalance)) {
                 System.out.println("✅ 充值成功！当前余额: €" + newBalance);
+                userDAO.addTransaction(rfidTag, "RECHARGE", amount);
                 return true;
             }
         }

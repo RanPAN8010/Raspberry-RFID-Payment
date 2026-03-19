@@ -5,6 +5,8 @@ import Raspberry.service.PaymentService;
 import Raspberry.DAO.UserDAO;
 import Raspberry.model.User;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PaiementHandler implements HttpHandler {
 	private PaymentService paymentService = new PaymentService();
@@ -12,47 +14,80 @@ public class PaiementHandler implements HttpHandler {
     
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        String query = exchange.getRequestURI().getQuery();
+    	// 1. 判断客户端想要什么格式 (HTML 或 JSON)
+        String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
+        boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
+
+        Map<String, String> params = parseQuery(exchange.getRequestURI().getQuery());
         String response;
+        int statusCode = 200;
 
-        if (query != null) {
-            String rfidTag = null;
-            double amount = 0.0;
+        try {
+            String rfidTag = params.get("tag");
+            String amountStr = params.get("amount");
 
-            // 解析参数: ?tag=xxx&amount=yyy
-            String[] params = query.split("&");
-            for (String param : params) {
-                String[] pair = param.split("=");
-                if (pair.length > 1) {
-                    if (pair[0].equals("tag")) rfidTag = pair[1];
-                    if (pair[0].equals("amount")) amount = Double.parseDouble(pair[1]);
-                }
-            }
-
-            if (rfidTag != null) {
-                // 执行扣款业务逻辑
-                boolean succes = paymentService.processPayment(rfidTag, amount);
-                
-                // 重新查询用户信息以显示最新余额
-                User user = userDAO.getUserByRfid(rfidTag);
-
-                if (succes && user != null) {
-                    response = "<h1>✅ Paiement Réussi</h1>" +
-                               "<p>Utilisateur : " + user.getUsername() + "</p>" +
-                               "<p>Nouveau Solde : <b>€" + user.getBalance() + "</b></p>";
-                } else {
-                    response = "<h1>❌ Échec du Paiement</h1>" +
-                               "<p>Utilisateur non trouvé ou solde insuffisant.</p>";
-                }
+            if (rfidTag == null || amountStr == null) {
+                response = renderError(wantsJson, "Parametres manquants", "Tag ou montant absent.");
+                statusCode = 400;
             } else {
-                response = "<h1>⚠️ Paramètres Invalides</h1><p>Veuillez fournir un tag RFID.</p>";
+                double amount = Double.parseDouble(amountStr);
+                
+                if (amount <= 0) {
+                    response = renderError(wantsJson, "Montant invalide", "Le montant doit être > 0.");
+                    statusCode = 400;
+                } else {
+                    boolean succes = paymentService.processPayment(rfidTag, amount);
+                    User user = userDAO.getUserByRfid(rfidTag);
+
+                    if (succes && user != null) {
+                        response = renderSuccess(wantsJson, user, amount);
+                    } else {
+                        response = renderError(wantsJson, "Echec du paiement", 
+                            (user == null) ? "Utilisateur inconnu." : "Solde insuffisant.");
+                    }
+                }
             }
-        } else {
-            response = "<h1>🚫 Requête Invalide</h1><p>Aucun paramètre fourni.</p>";
+        } catch (NumberFormatException e) {
+            response = renderError(wantsJson, "Erreur de format", "Le montant doit être un nombre.");
+            statusCode = 400;
+        } catch (Exception e) {
+            response = renderError(wantsJson, "Erreur Serveur", "Erreur interne.");
+            statusCode = 500;
         }
 
-        // 调用 SimpleHttpServer 的静态公共方法发送响应
+        // 设置正确的 Content-Type
+        String contentType = wantsJson ? "application/json; charset=UTF-8" : "text/html; charset=UTF-8";
+        exchange.getResponseHeaders().set("Content-Type", contentType);
         SimpleHttpServer.sendResponse(exchange, response);
     }
 
+    // --- 渲染逻辑 ---
+
+    private String renderSuccess(boolean isJson, User user, double amount) {
+        if (isJson) {
+            return String.format("{\"status\":\"success\", \"user\":\"%s\", \"deducted\":%.2f, \"balance\":%.2f}",
+                                 user.getUsername(), amount, user.getBalance());
+        }
+        return "<html><body style='text-align:center; font-family:sans-serif;'>" +
+               "<h1 style='color:green;'>✅ Succès</h1><p>Nouveau solde pour " + user.getUsername() + 
+               " : <b>€" + user.getBalance() + "</b></p><a href='/'>Retour</a></body></html>";
+    }
+
+    private String renderError(boolean isJson, String title, String msg) {
+        if (isJson) {
+            return String.format("{\"status\":\"error\", \"title\":\"%s\", \"message\":\"%s\"}", title, msg);
+        }
+        return "<html><body style='text-align:center; font-family:sans-serif;'>" +
+               "<h1 style='color:red;'>❌ " + title + "</h1><p>" + msg + "</p><a href='/'>Retour</a></body></html>";
+    }
+
+    private Map<String, String> parseQuery(String query) {
+        Map<String, String> result = new HashMap<>();
+        if (query == null) return result;
+        for (String param : query.split("&")) {
+            String[] entry = param.split("=");
+            if (entry.length > 1) result.put(entry[0], entry[1]);
+        }
+        return result;
+    }
 }

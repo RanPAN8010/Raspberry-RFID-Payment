@@ -6,6 +6,9 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
+# 将 webapp 下的内容复制到容器的工作目录
+COPY src/main/webapp/index.html ./index.html
+
 # 执行打包，assembly 插件会生成 *-jar-with-dependencies.jar
 RUN mvn clean package -DskipTests
 
@@ -17,8 +20,10 @@ WORKDIR /app
 RUN mkdir -p data
 
 # 从构建阶段复制生成的“带依赖”的 JAR 包
-# 注意：这里的 jar 文件名必须与你 pom.xml 里的 artifactId 和 version 对应
 COPY --from=build /app/target/service-reseau-2026-0.0.1-SNAPSHOT-jar-with-dependencies.jar app.jar
+
+# 从构建阶段复制 index.html 到运行阶段的工作目录
+COPY --from=build /app/index.html ./index.html
 
 # 暴露 Web 服务器端口
 EXPOSE 8080

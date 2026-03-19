@@ -92,4 +92,20 @@ public class UserDAO {
             return false;
         }
     }
+    
+	/**
+     * 记录流水
+     */
+    public void addTransaction(String tag, String type, double montant) {
+        String sql = "INSERT INTO transactions(rfid_tag, type, montant) VALUES(?,?,?)";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, tag);
+            pstmt.setString(2, type);
+            pstmt.setDouble(3, montant);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Erreur d'enregistrement de transaction : " + e.getMessage());
+        }
+    }
 }

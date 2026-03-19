@@ -26,7 +26,12 @@ public class SimpleHttpServer {
             server.createContext("/pay", new PaiementHandler());
             
             // 绑定注册接口：/admin/register
-            server.createContext("/admin/enregistrement", new EnregistrementHandler());
+            
+            // 添加充值接口的映射：/admin/recharge
+            server.createContext("/admin/recharge", new RechargeHandler());
+            
+            //  路由配置：流水记录
+            server.createContext("/admin/historique", new HistoriqueHandler());
 
             server.setExecutor(null); // 使用默认执行器
             server.start();
