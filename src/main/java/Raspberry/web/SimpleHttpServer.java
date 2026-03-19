@@ -13,7 +13,7 @@ import java.net.InetSocketAddress;
 public class SimpleHttpServer {
 	private PaymentService paymentService = new PaymentService();
 	
-	public void start(int port) {
+	public static void start(int port) {
         try {
             // 1. 创建服务器，监听指定端口
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);

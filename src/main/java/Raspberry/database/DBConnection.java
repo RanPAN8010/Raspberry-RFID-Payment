@@ -34,7 +34,7 @@ public class DBConnection {
      * 初始化数据库：创建用户表
      * 满足文档要求：RFID 绑定、余额管理、角色区分 [cite: 3, 6, 12]
      */
-    private static void initDatabase() {
+    public static void initDatabase() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS users ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "username TEXT NOT NULL,"
@@ -58,8 +58,7 @@ public class DBConnection {
             System.out.println("数据库表结构已准备就绪。");
         } catch (SQLException e) {
             System.err.println("创建表失败: " + e.getMessage());
-        }
-
-        
+        }      
     }
+
 }
