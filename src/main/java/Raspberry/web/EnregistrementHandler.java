@@ -57,27 +57,26 @@ public class EnregistrementHandler implements HttpHandler {
 
         String nom = params.getOrDefault("nom", "Inconnu");
         String tag = params.get("tag");
-        String soldeStr = params.getOrDefault("solde", "0");
 
         if (tag == null || tag.trim().isEmpty()) {
-            return "<h1> Erreur</h1><p>Le tag RFID est obligatoire.</p><a href='/admin/enregistrement'>Réessayer</a>";
+            return "<h1>❌ Erreur</h1><p>Le tag RFID est obligatoire.</p><a href='/admin/enregistrement'>Réessayer</a>";
         }
 
         try {
-            double solde = Double.parseDouble(soldeStr);
+            // 🚨 核心修改：强制将新用户的初始金额设为 0.0
+            double solde = 0.0;
             User user = new User(nom, tag, solde, "USER");
 
             boolean succes = userDAO.addUser(user);
 
             if (succes) {
-                // 注册成功，提示并提供返回链接
-                return "<h1>✅ Succès</h1><p>Utilisateur <b>" + nom + "</b> (Tag: " + tag + ") enregistré.</p>" +
+                return "<h1>✅ Succès</h1><p>Utilisateur <b>" + nom + "</b> (Tag: " + tag + ") enregistré avec 0.0€.</p>" +
                         "<a href='/admin/enregistrement'>Nouvel enregistrement</a> | <a href='/'>Accueil</a>";
             } else {
-                return "<h1> Échec</h1><p>Le tag [" + tag + "] existe déjà dans la base.</p><a href='/admin/enregistrement'>Retour</a>";
+                return "<h1>❌ Échec</h1><p>Le tag [" + tag + "] existe déjà dans la base.</p><a href='/admin/enregistrement'>Retour</a>";
             }
-        } catch (NumberFormatException e) {
-            return "<h1>❌ Erreur</h1><p>Le solde doit être un nombre valide.</p><a href='/admin/enregistrement'>Retour</a>";
+        } catch (Exception e) {
+            return "<h1>❌ Erreur</h1><p>Erreur lors de la création de l'utilisateur.</p><a href='/admin/enregistrement'>Retour</a>";
         }
     }
 
