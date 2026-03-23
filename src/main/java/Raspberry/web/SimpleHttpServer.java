@@ -11,9 +11,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 public class SimpleHttpServer {
-    private PaymentService paymentService = new PaymentService();
-
-    public void start(int port) {
+	private PaymentService paymentService = new PaymentService();
+	
+	public static void start(int port) {
         try {
             // 1. 创建服务器，监听指定端口
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -24,13 +24,13 @@ public class SimpleHttpServer {
 
             // 3. 路由配置：支付 API 测试 (例如: /pay?id=123)
             server.createContext("/pay", new PaiementHandler());
-
-            // 绑定注册接口：/admin/register
-
-
+            
+            // 绑定注册接口：/admin/enregistrement
+            server.createContext("/admin/enregistrement", new EnregistrementHandler());
+            
             // 添加充值接口的映射：/admin/recharge
             server.createContext("/admin/recharge", new RechargeHandler());
-
+            
             //  路由配置：流水记录
             server.createContext("/admin/historique", new HistoriqueHandler());
 
@@ -41,7 +41,6 @@ public class SimpleHttpServer {
             System.err.println("服务器启动失败: " + e.getMessage());
         }
     }
-
     // 封装发送响应的方法
     public static void sendResponse(HttpExchange exchange, String response) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
@@ -50,4 +49,5 @@ public class SimpleHttpServer {
         os.write(response.getBytes());
         os.close();
     }
+
 }

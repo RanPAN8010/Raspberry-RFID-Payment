@@ -1,93 +1,72 @@
 package Raspberry.web;
-
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import Raspberry.service.PaymentService;
 import Raspberry.DAO.UserDAO;
 import Raspberry.model.User;
-import Raspberry.RFIDReader; // 引入我们新建的硬件读卡工具类
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class PaiementHandler implements HttpHandler {
-    private PaymentService paymentService = new PaymentService();
+	private PaymentService paymentService = new PaymentService();
     private UserDAO userDAO = new UserDAO();
-
+    
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+    	String query = exchange.getRequestURI().getQuery();
+        Map<String, String> params = parseQuery(query);
+        
+        // 检测客户端是否需要 JSON
         String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
         boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
 
-        Map<String, String> params = parseQuery(exchange.getRequestURI().getQuery());
         String response;
-        int statusCode = 200;
-
         try {
-            // 💡 【纯软件测试模式】
-            // 我们暂时不调用 RFIDReader.waitForCardSwipe();
-            // 而是直接从网址里拿卡号 (tag) 和 金额 (amount)
             String rfidTag = params.get("tag");
-            String amountStr = params.get("amount");
+            double amount = Double.parseDouble(params.getOrDefault("amount", "0"));
 
-            if (amountStr == null || rfidTag == null) {
-                response = renderError(wantsJson, "参数缺失", "请在网址中提供 tag 和 amount 参数。");
-                statusCode = 400;
-            } else {
-                double amount = Double.parseDouble(amountStr);
+            if (rfidTag != null && amount > 0) {
+                boolean succes = paymentService.processPayment(rfidTag, amount);
+                User user = userDAO.getUserByRfid(rfidTag);
 
-                if (amount <= 0) {
-                    response = renderError(wantsJson, "金额无效", "金额必须大于0。");
-                    statusCode = 400;
+                if (succes && user != null) {
+                    response = processResponse(wantsJson, true, user, amount, "Paiement Réussi", "Transaction effectuée avec succès.");
                 } else {
-                    System.out.println("🌐 [测试模式] 收到网页扣款请求：卡号 [" + rfidTag + "]，金额 [" + amount + "] 欧。");
-
-                    // 直接去查数据库并扣款，跳过硬件！
-                    boolean succes = paymentService.processPayment(rfidTag, amount);
-                    User user = userDAO.getUserByRfid(rfidTag);
-
-                    if (succes && user != null) {
-                        response = renderSuccess(wantsJson, user, amount);
-                        System.out.println("✅ [测试模式] 数据库扣款成功！");
-                    } else {
-                        response = renderError(wantsJson, "支付失败",
-                                (user == null) ? "数据库中找不到该卡号。" : "余额不足。");
-                        System.out.println("❌ [测试模式] 扣款失败（查无此人或余额不足）。");
-                    }
+                    response = processResponse(wantsJson, false, user, amount, "Échec du Paiement", "Solde insuffisant ou utilisateur inconnu.");
                 }
+            } else {
+                response = processResponse(wantsJson, false, null, 0, "Paramètres Invalides", "Le tag ou le montant est incorrect.");
             }
-        } catch (NumberFormatException e) {
-            response = renderError(wantsJson, "格式错误", "金额必须是数字。");
-            statusCode = 400;
         } catch (Exception e) {
-            response = renderError(wantsJson, "服务器错误", "内部系统错误。");
-            statusCode = 500;
+            response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
         }
 
-        String contentType = wantsJson ? "application/json; charset=UTF-8" : "text/html; charset=UTF-8";
-        exchange.getResponseHeaders().set("Content-Type", contentType);
+        String contentType = wantsJson ? "application/json" : "text/html";
+        exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=UTF-8");
         SimpleHttpServer.sendResponse(exchange, response);
     }
 
-    // --- 渲染逻辑 (保持组员原本的漂亮样式不变) ---
-
-    private String renderSuccess(boolean isJson, User user, double amount) {
+    private String processResponse(boolean isJson, boolean isSuccess, User user, double amount, String title, String msg) throws IOException {
         if (isJson) {
-            return String.format("{\"status\":\"success\", \"user\":\"%s\", \"deducted\":%.2f, \"balance\":%.2f}",
-                    user.getUsername(), amount, user.getBalance());
+            return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}", 
+                                 isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
         }
-        return "<html><body style='text-align:center; font-family:sans-serif;'>" +
-                "<h1 style='color:green;'>✅ Succès (支付成功)</h1><p>Nouveau solde pour " + user.getUsername() +
-                " : <b>€" + user.getBalance() + "</b></p><a href='/'>Retour</a></body></html>";
-    }
 
-    private String renderError(boolean isJson, String title, String msg) {
-        if (isJson) {
-            return String.format("{\"status\":\"error\", \"title\":\"%s\", \"message\":\"%s\"}", title, msg);
-        }
-        return "<html><body style='text-align:center; font-family:sans-serif;'>" +
-                "<h1 style='color:red;'>❌ " + title + "</h1><p>" + msg + "</p><a href='/'>Retour</a></body></html>";
+        // 读取外部 HTML 模板
+        String template = new String(Files.readAllBytes(Paths.get("paiement_resultat.html")));
+        
+        // 动态替换占位符
+        return template
+            .replace("{{CLASS}}", isSuccess ? "success" : "error")
+            .replace("{{ICON}}", isSuccess ? "✅" : "❌")
+            .replace("{{TITLE}}", title)
+            .replace("{{MESSAGE}}", msg)
+            .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
+            .replace("{{AMOUNT}}", String.format("%.2f", amount))
+            .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
     }
 
     private Map<String, String> parseQuery(String query) {

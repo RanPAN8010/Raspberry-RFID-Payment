@@ -13,15 +13,15 @@ import java.util.Scanner;
 
 public class APP {
     public static void main(String[] args) {
-        System.out.println("RFID Payment System is starting...");
-        int port = 8080;
+		System.out.println("RFID Payment System is starting...");
+		int port = 8080;
 
         // 1. 初始化数据库并获取连接
         Connection conn = DBConnection.getConnection();
-
+        
         if (conn != null) {
             System.out.println("✅ 数据库连接并初始化成功！");
-
+            
             // 2. 检查并创建测试数据
             UserDAO dao = new UserDAO();
             if (dao.getUserByRfid("8888") == null) {
@@ -29,15 +29,12 @@ public class APP {
                 dao.addUser(testUser);
                 System.out.println("✅ 已创建默认测试账户: 卡号 8888");
             }
-
+            
             try {
-                // 👇 缺失的灵魂两行代码 👇
-                SimpleHttpServer webServer = new SimpleHttpServer();
-                webServer.start(port);
-
-                System.out.println("🌐 Web 服务器已启动，监听端口: " + port);
-
-                // 防止主线程退出 (因为 HttpServer 默认后台运行，主线程需要挂起保持程序存活)
+                SimpleHttpServer.start(port);
+                System.out.println("🌐 Web 服务器已启动，监听端口: 8080");
+                
+                // 防止主线程退出
                 Thread.currentThread().join();
             } catch (Exception e) {
                 System.err.println("❌ Web 服务器启动失败: " + e.getMessage());
@@ -45,5 +42,4 @@ public class APP {
             }
         }
     }
-
 }
