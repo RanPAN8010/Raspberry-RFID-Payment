@@ -51,7 +51,6 @@ public class EnregistrementHandler implements HttpHandler {
 
         String nom = params.getOrDefault("nom", "Inconnu");
         String tag = params.get("tag");
-        String soldeStr = params.getOrDefault("solde", "0");
 
         // 基础验证：Tag 不能为空
         if (tag == null || tag.trim().isEmpty()) {
@@ -59,7 +58,8 @@ public class EnregistrementHandler implements HttpHandler {
         }
 
         try {
-            double solde = Double.parseDouble(soldeStr);
+            // 🚨 核心修改：强制将新用户的初始金额设为 0.0
+            double solde = 0.0;
             User user = new User(nom, tag, solde, "USER");
             boolean succes = userDAO.addUser(user);
 
