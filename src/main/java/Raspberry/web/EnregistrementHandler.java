@@ -20,7 +20,7 @@ public class EnregistrementHandler implements HttpHandler {
             String query = exchange.getRequestURI().getQuery();
 
             // 1. 如果没有参数，显示注册表单
-            if (query == null || query.isEmpty()) {
+            if (query == null || query.trim().isEmpty()) {
                 response = loadHtmlTemplate("enregistrement.html");
             } else {
                 // 2. 处理提交的数据

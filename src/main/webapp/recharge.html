@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Recharge de Compte</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6; }
+        .card { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-submit { background: #9b59b6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>💰 Recharge de Solde</h2>
+        <form action="/admin/recharge" method="get">
+            <input type="text" name="tag" placeholder="Scanner le Tag (ID)" required>
+            <input type="number" name="amount" placeholder="Montant (€)" step="0.01" required>
+            <button type="submit" class="btn-submit">Confirmer la Recharge</button>
+        </form>
+        <br>
+        <a href="/">Retour à l'accueil</a>
+    </div>
+</body>
+</html>
