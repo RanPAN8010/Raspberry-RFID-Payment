@@ -11,11 +11,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EnregistrementHandler implements HttpHandler {
-	private UserDAO userDAO = new UserDAO();
+    private UserDAO userDAO = new UserDAO();
 
-	@Override
+    @Override
     public void handle(HttpExchange exchange) throws IOException {
-		String response;
+        String response;
         try {
             String query = exchange.getRequestURI().getQuery();
 
@@ -34,19 +34,19 @@ public class EnregistrementHandler implements HttpHandler {
 
         SimpleHttpServer.sendResponse(exchange, response);
     }
-	
-	/**
+
+    /**
      * 读取注册页面的 HTML 模板
      */
     private String loadHtmlTemplate(String fileName) {
         try {
-        	byte[] encoded = Files.readAllBytes(Paths.get(fileName));
+            byte[] encoded = Files.readAllBytes(Paths.get(fileName));
             return new String(encoded, "UTF-8");
         } catch (IOException e) {
-        	System.err.println("❌ Fichier manquant : " + fileName);
-            return "<html><body><h1>Erreur 404</h1><p>Le fichier [" 
-        			+ fileName 
-        			+ "] est introuvable sur le serveur.</p></body></html>";
+            System.err.println("❌ Fichier manquant : " + fileName);
+            return "<html><body><h1>Erreur 404</h1><p>Le fichier ["
+                    + fileName
+                    + "] est introuvable sur le serveur.</p></body></html>";
         }
     }
     /**
@@ -54,7 +54,7 @@ public class EnregistrementHandler implements HttpHandler {
      */
     private String handleRegistration(String query) {
         Map<String, String> params = parseQuery(query);
-        
+
         String nom = params.getOrDefault("nom", "Inconnu");
         String tag = params.get("tag");
         String soldeStr = params.getOrDefault("solde", "0");
@@ -64,15 +64,15 @@ public class EnregistrementHandler implements HttpHandler {
         }
 
         try {
-        	double solde = Double.parseDouble(soldeStr);
+            double solde = Double.parseDouble(soldeStr);
             User user = new User(nom, tag, solde, "USER");
-            
+
             boolean succes = userDAO.addUser(user);
-            
+
             if (succes) {
                 // 注册成功，提示并提供返回链接
                 return "<h1>✅ Succès</h1><p>Utilisateur <b>" + nom + "</b> (Tag: " + tag + ") enregistré.</p>" +
-                       "<a href='/admin/enregistrement'>Nouvel enregistrement</a> | <a href='/'>Accueil</a>";
+                        "<a href='/admin/enregistrement'>Nouvel enregistrement</a> | <a href='/'>Accueil</a>";
             } else {
                 return "<h1> Échec</h1><p>Le tag [" + tag + "] existe déjà dans la base.</p><a href='/admin/enregistrement'>Retour</a>";
             }
@@ -80,7 +80,7 @@ public class EnregistrementHandler implements HttpHandler {
             return "<h1>❌ Erreur</h1><p>Le solde doit être un nombre valide.</p><a href='/admin/enregistrement'>Retour</a>";
         }
     }
-    
+
     /**
      * 解析 URL 参数
      */
