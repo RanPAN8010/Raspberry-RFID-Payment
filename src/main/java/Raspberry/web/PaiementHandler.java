@@ -17,31 +17,44 @@ public class PaiementHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
     	String query = exchange.getRequestURI().getQuery();
-        Map<String, String> params = parseQuery(query);
         
         // 检测客户端是否需要 JSON
         String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
         boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
 
         String response;
+        
         try {
-            String rfidTag = params.get("tag");
-            double amount = Double.parseDouble(params.getOrDefault("amount", "0"));
-
-            if (rfidTag != null && amount > 0) {
-                boolean succes = paymentService.processPayment(rfidTag, amount);
-                User user = userDAO.getUserByRfid(rfidTag);
-
-                if (succes && user != null) {
-                    response = processResponse(wantsJson, true, user, amount, "Paiement Réussi", "Transaction effectuée avec succès.");
-                } else {
-                    response = processResponse(wantsJson, false, user, amount, "Échec du Paiement", "Solde insuffisant ou utilisateur inconnu.");
-                }
+            // 【逻辑分发】：如果没有参数，显示手动支付的 HTML 表单
+            if (query == null || query.trim().isEmpty()) {
+                response = new String(Files.readAllBytes(Paths.get("paiement.html")), "UTF-8");
             } else {
-                response = processResponse(wantsJson, false, null, 0, "Paramètres Invalides", "Le tag ou le montant est incorrect.");
+                // 如果有参数，执行支付扣款逻辑
+                Map<String, String> params = parseQuery(query);
+                String rfidTag = params.get("tag");
+                double amount = Double.parseDouble(params.getOrDefault("amount", "0"));
+
+                if (rfidTag != null && amount > 0) {
+                    boolean succes = paymentService.processPayment(rfidTag, amount);
+                    User user = userDAO.getUserByRfid(rfidTag);
+
+                    if (succes && user != null) {
+                        response = processResponse(wantsJson, true, user, amount, "Paiement Réussi", "Transaction effectuée avec succès.");
+                    } else {
+                        response = processResponse(wantsJson, false, user, amount, "Échec du Paiement", "Solde insuffisant ou utilisateur inconnu.");
+                    }
+                } else {
+                    response = processResponse(wantsJson, false, null, 0, "Paramètres Invalides", "Le tag ou le montant est incorrect.");
+                }
             }
         } catch (Exception e) {
-            response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
+            // 这里的错误处理也要小心，如果 processResponse 内部读文件失败，这里也会崩
+            e.printStackTrace(); 
+            try {
+                response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
+            } catch (Exception fatal) {
+                response = "<h1>Fatal Error</h1><p>HTML template missing.</p>";
+            }
         }
 
         String contentType = wantsJson ? "application/json" : "text/html";
@@ -56,7 +69,7 @@ public class PaiementHandler implements HttpHandler {
         }
 
         // 读取外部 HTML 模板
-        String template = new String(Files.readAllBytes(Paths.get("paiement_resultat.html")));
+        String template = new String(Files.readAllBytes(Paths.get("resultat.html")));
         
         // 动态替换占位符
         return template

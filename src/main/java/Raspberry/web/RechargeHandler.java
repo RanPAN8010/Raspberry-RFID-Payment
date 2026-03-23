@@ -18,16 +18,17 @@ public class RechargeHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String query = exchange.getRequestURI().getQuery();
-        String response;        
+    	Map<String, String> params = parseQuery(query);
         
         // 判断客户端需求 (JSON 还是 HTML)
         String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
         boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
+        
+        String response;  
         try {
             if (query == null || query.trim().isEmpty()) {
                 response = loadTemplate("recharge.html");
             } else {
-            	Map<String, String> params = parseQuery(query);
             	String tag = params.get("tag");
                 String amountStr = params.getOrDefault("amount", "0");
                 double amount = Double.parseDouble(amountStr);
@@ -48,7 +49,11 @@ public class RechargeHandler implements HttpHandler {
         } catch (Exception e) {
             // 【关键修复】：捕获异常并打印日志，防止 ERR_EMPTY_RESPONSE
             e.printStackTrace();
-            response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
+            try {
+                response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
+            } catch (Exception fatal) {
+                response = "<html><body><h1>Fatal Error</h1><p>Template missing.</p></body></html>";
+            }
         }
         String contentType = wantsJson ? "application/json" : "text/html";
         exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=UTF-8");
@@ -60,15 +65,15 @@ public class RechargeHandler implements HttpHandler {
             return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}", 
                                  isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
         }
-        // 复用支付结果的模板 (或者你新建一个 recharge_resultat.html)
-        String template = loadTemplate("paiement_resultat.html");
+        String template = loadTemplate("resultat.html");
+        
         return template
-            .replace("{{CLASS}}", isSuccess ? "success" : "recharge") // 可以自定义 CSS 类名
+            .replace("{{CLASS}}", isSuccess ? "success" : "error")
             .replace("{{ICON}}", isSuccess ? "💰" : "❌")
             .replace("{{TITLE}}", title)
             .replace("{{MESSAGE}}", msg)
             .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
-            .replace("{{AMOUNT}}", "+" + String.format("%.2f", amount))
+            .replace("{{DETAIL}}", isSuccess ? ("Recharge de €" + String.format("%.2f", amount)) : "Action annulée")
             .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
     }
     

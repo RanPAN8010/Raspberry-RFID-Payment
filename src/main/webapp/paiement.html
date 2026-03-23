@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paiement Manuel</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px; background: #f4f7f6; }
+        .card { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; }
+        h2 { color: #c0392b; margin-bottom: 20px; }
+        input { display: block; width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        .btn-pay { background: #e74c3c; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: 0.3s; }
+        .btn-pay:hover { background: #c0392b; }
+        .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Paiement Manuel</h2>
+        <p style="color: #7f8c8d; font-size: 0.9em;">Effectuer un débit sur un compte</p>
+        <form action="/pay" method="get">
+            <input type="text" name="tag" placeholder="ID du Tag RFID" required>
+            <input type="number" name="amount" placeholder="Montant à débiter (€)" step="0.01" min="0.01" required>
+            <button type="submit" class="btn-pay">Confirmer le Paiement</button>
+        </form>
+        <a href="/" class="back-link">← Retour au Dashboard</a>
+    </div>
+</body>
+</html>

@@ -38,49 +38,59 @@ public class EnregistrementHandler implements HttpHandler {
     /**
      * 读取注册页面的 HTML 模板
      */
-    private String loadHtmlTemplate(String fileName) {
-        try {
-            byte[] encoded = Files.readAllBytes(Paths.get(fileName));
-            return new String(encoded, "UTF-8");
-        } catch (IOException e) {
-            System.err.println("❌ Fichier manquant : " + fileName);
-            return "<html><body><h1>Erreur 404</h1><p>Le fichier ["
-                    + fileName
-                    + "] est introuvable sur le serveur.</p></body></html>";
-        }
+    private String loadHtmlTemplate(String fileName) throws IOException {
+    	// 直接抛出异常让 handle() 的 try-catch 处理，避免返回半成品页面
+        byte[] encoded = Files.readAllBytes(Paths.get(fileName));
+        return new String(encoded, "UTF-8");
     }
     /**
      * 处理具体的注册逻辑
      */
-    private String handleRegistration(String query) {
+    private String handleRegistration(String query) throws IOException {
         Map<String, String> params = parseQuery(query);
 
         String nom = params.getOrDefault("nom", "Inconnu");
         String tag = params.get("tag");
         String soldeStr = params.getOrDefault("solde", "0");
 
+        // 基础验证：Tag 不能为空
         if (tag == null || tag.trim().isEmpty()) {
-            return "<h1> Erreur</h1><p>Le tag RFID est obligatoire.</p><a href='/admin/enregistrement'>Réessayer</a>";
+            return formatResultPage(false, "Paramètre Manquant", "Le tag RFID est obligatoire.", nom, "N/A", 0.0);
         }
 
         try {
             double solde = Double.parseDouble(soldeStr);
             User user = new User(nom, tag, solde, "USER");
-
             boolean succes = userDAO.addUser(user);
 
             if (succes) {
-                // 注册成功，提示并提供返回链接
-                return "<h1>✅ Succès</h1><p>Utilisateur <b>" + nom + "</b> (Tag: " + tag + ") enregistré.</p>" +
-                        "<a href='/admin/enregistrement'>Nouvel enregistrement</a> | <a href='/'>Accueil</a>";
+                // 成功：显示绿色成功页
+                return formatResultPage(true, "Enregistrement Réussi", "Nouvel utilisateur ajouté au système.", nom, "Compte créé", solde);
             } else {
-                return "<h1> Échec</h1><p>Le tag [" + tag + "] existe déjà dans la base.</p><a href='/admin/enregistrement'>Retour</a>";
+                // 失败：Tag 已存在
+                return formatResultPage(false, "Échec de l'enregistrement", "Ce tag RFID est déjà associé à un autre compte.", nom, "Erreur de doublon", 0.0);
             }
         } catch (NumberFormatException e) {
-            return "<h1>❌ Erreur</h1><p>Le solde doit être un nombre valide.</p><a href='/admin/enregistrement'>Retour</a>";
+            return formatResultPage(false, "Erreur de Saisie", "Le solde doit être un nombre valide.", nom, "Format invalide", 0.0);
         }
     }
 
+    /**
+     * 核心逻辑：读取 resultat.html 并注入注册相关的数据
+     */
+    private String formatResultPage(boolean isSuccess, String title, String msg, String user, String detail, double balance) throws IOException {
+        String template = loadHtmlTemplate("resultat.html");
+
+        return template
+            .replace("{{CLASS}}", isSuccess ? "success" : "error")
+            .replace("{{ICON}}", isSuccess ? "👤" : "❌") // 注册成功用用户图标
+            .replace("{{TITLE}}", title)
+            .replace("{{MESSAGE}}", msg)
+            .replace("{{USER}}", user)
+            .replace("{{DETAIL}}", detail)
+            .replace("{{BALANCE}}", String.format("%.2f", balance));
+    }
+    
     /**
      * 解析 URL 参数
      */

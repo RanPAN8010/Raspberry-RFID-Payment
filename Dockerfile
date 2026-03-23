@@ -22,9 +22,10 @@ COPY --from=build /app/target/service-reseau-2026-0.0.1-SNAPSHOT-jar-with-depend
 
 # 从构建阶段复制 index.html 到运行阶段的工作目录
 COPY --from=build /app/src/main/webapp/index.html ./index.html
-COPY --from=build /app/src/main/webapp/paiement_resultat.html ./paiement_resultat.html
 COPY --from=build /app/src/main/webapp/enregistrement.html ./enregistrement.html
 COPY --from=build /app/src/main/webapp/recharge.html ./recharge.html
+COPY --from=build /app/src/main/webapp/paiement.html ./paiement.html
+COPY --from=build /app/src/main/webapp/resultat.html ./resultat.html
 
 # 暴露 Web 服务器端口
 EXPOSE 8080
