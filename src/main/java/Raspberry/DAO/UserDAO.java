@@ -7,6 +7,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
 
@@ -108,4 +110,38 @@ public class UserDAO {
             System.err.println("Erreur d'enregistrement de transaction : " + e.getMessage());
         }
     }
+    /**
+     * 获取所有用户列表 (用于管理界面展示)
+     */
+    public List<User> getAllUsers() {
+        List<User> userList = new ArrayList<>();
+        String sql = "SELECT * FROM users ORDER BY id DESC"; // 按 ID 倒序排列，新注册的在前面
+
+        // 核心：手动检查连接
+        Connection conn = DBConnection.getConnection();
+        if (conn == null) {
+            return userList; // 返回空列表而不是 null，防止外部调用报空指针
+        }
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setUsername(rs.getString("username"));
+                user.setRfidTag(rs.getString("rfid_tag"));
+                user.setBalance(rs.getDouble("balance"));
+                user.setRole(rs.getString("role"));
+                user.setActive(rs.getInt("active") == 1);
+                
+                userList.add(user);
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ 获取用户列表失败: " + e.getMessage());
+        }
+        
+        return userList;
+    }
+    
 }

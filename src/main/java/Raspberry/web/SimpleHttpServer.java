@@ -29,7 +29,10 @@ public class SimpleHttpServer {
 
             // 4. 路由配置：注册接口
             server.createContext("/admin/enregistrement", new EnregistrementHandler());
-
+         
+            // 5. 路由配置：用户列表
+            server.createContext("/admin/liste", new UserListHandler());
+            
             // ==========================================
             // 💡 新增：专用于网页端触发物理刷卡的 API 接口
             // 这个接口专门负责和网页上的 "Scanner la carte" 按钮对接

@@ -26,6 +26,7 @@ COPY --from=build /app/src/main/webapp/enregistrement.html ./enregistrement.html
 COPY --from=build /app/src/main/webapp/recharge.html ./recharge.html
 COPY --from=build /app/src/main/webapp/paiement.html ./paiement.html
 COPY --from=build /app/src/main/webapp/resultat.html ./resultat.html
+COPY --from=build /app/src/main/webapp/liste.html ./liste.html
 
 # 暴露 Web 服务器端口
 EXPOSE 8080
