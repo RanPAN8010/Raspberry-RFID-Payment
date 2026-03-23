@@ -25,7 +25,8 @@ public class SimpleHttpServer {
             // 3. 路由配置：支付 API 测试 (例如: /pay?id=123)
             server.createContext("/pay", new PaiementHandler());
             
-            // 绑定注册接口：/admin/register
+            // 绑定注册接口：/admin/enregistrement
+            server.createContext("/admin/enregistrement", new EnregistrementHandler());
             
             // 添加充值接口的映射：/admin/recharge
             server.createContext("/admin/recharge", new RechargeHandler());
