@@ -6,10 +6,12 @@
     <style>
         body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6; }
         .card { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px;}
-        input { display: block; width: 90%; padding: 10px; margin: 10px auto; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;}
-        .btn-save { background: #e67e22; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; width: 90%; margin-top: 10px; border-radius: 5px;}
-        .btn-scan { background: #3498db; color: white; border: none; padding: 10px; cursor: pointer; font-weight: bold; width: 90%; margin: 10px auto; display: block; border-radius: 5px;}
-        .btn-scan:hover { background: #2980b9; }
+        input { display: block; width: 90%; padding: 10px; margin: 10px auto; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px;}
+        .btn-save { background: #e67e22; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; width: 90%; margin-top: 15px; border-radius: 5px; font-size: 16px;}
+        .btn-save:hover { background: #d35400; }
+
+        .waiting-card { border: 2px solid #3498db; animation: pulse 2s infinite; background-color: #ebf5fb; }
+        .success-card { border: 2px solid #2ecc71; background-color: #eaeded; }
     </style>
 </head>
 <body>
@@ -18,22 +20,24 @@
     <form action="/admin/enregistrement" method="get">
         <input type="text" name="nom" placeholder="Nom de l'utilisateur" required>
 
-        <button type="button" class="btn-scan" onclick="demanderScan()">1. Scanner la carte</button>
-        <input type="text" id="tagInput" name="tag" placeholder="ID du Tag RFID" required readonly>
+        <input type="text" id="tagInput" class="waiting-card" name="tag" placeholder="⏳ Attente du badge..." required readonly>
 
-        <button type="submit" class="btn-save">2. Enregistrer </button>
+        <button type="submit" class="btn-save">Enregistrer </button>
     </form>
     <br>
     <a href="/">Retour à l'accueil</a>
 </div>
 
 <script>
-    function demanderScan() {
-        const tagInput = document.getElementById('tagInput');
-        tagInput.placeholder = "⏳ En attente du badge... ";
-        tagInput.value = ""; // 清空之前的数据
+    // 网页一加载完毕，就立刻执行自动监听功能
+    window.onload = function() {
+        ecouterBadgeAutomatique();
+    };
 
-        // 向树莓派发送请求，要求开启物理读卡器
+    function ecouterBadgeAutomatique() {
+        const tagInput = document.getElementById('tagInput');
+
+        // 悄悄向树莓派发送请求，要求开启物理读卡器
         fetch('/api/scan')
             .then(response => {
                 if (!response.ok) throw new Error("Erreur serveur");
@@ -41,15 +45,20 @@
             })
             .then(tag => {
                 if (tag && tag.trim() !== "") {
-                    tagInput.value = tag.trim(); // 自动填入输入框！
-                    alert("✅ Carte lue avec succès ! (读卡成功)");
+                    // 读到卡号啦！填入数据并改变输入框颜色为绿色
+                    tagInput.value = tag.trim();
+                    tagInput.classList.remove('waiting-card');
+                    tagInput.classList.add('success-card');
+                    tagInput.placeholder = "✅ Carte lue !";
                 } else {
-                    tagInput.placeholder = "❌ Echec, réessayez (读卡失败)";
+                    // 如果没读到，继续重新监听
+                    ecouterBadgeAutomatique();
                 }
             })
             .catch(err => {
-                alert("Erreur de connexion au lecteur RFID.");
-                tagInput.placeholder = "ID du Tag RFID";
+                // 如果断网了，提示错误
+                tagInput.classList.remove('waiting-card');
+                tagInput.placeholder = "❌ Connexion perdue.";
             });
     }
 </script>

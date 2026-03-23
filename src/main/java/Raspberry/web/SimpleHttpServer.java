@@ -62,7 +62,9 @@ public class SimpleHttpServer {
             // 6. 路由配置：流水记录
             server.createContext("/admin/historique", new HistoriqueHandler());
 
-            server.setExecutor(null); // 使用默认执行器
+            // 🚨 核心修改：使用多线程池！
+            // 这样后台在死等物理刷卡的时候，依然可以秒速响应其他网页的访问请求
+            server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
             server.start();
 
         } catch (IOException e) {
