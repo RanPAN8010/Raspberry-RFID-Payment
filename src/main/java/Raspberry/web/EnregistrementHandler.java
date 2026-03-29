@@ -40,7 +40,8 @@ public class EnregistrementHandler implements HttpHandler {
      */
     private String loadHtmlTemplate(String fileName) throws IOException {
     	// 直接抛出异常让 handle() 的 try-catch 处理，避免返回半成品页面
-        byte[] encoded = Files.readAllBytes(Paths.get(fileName));
+        String basePath = "src/main/webapp/";
+        byte[] encoded = Files.readAllBytes(Paths.get(basePath+fileName));
         return new String(encoded, "UTF-8");
     }
     /**

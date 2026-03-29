@@ -1,4 +1,5 @@
 package Raspberry.web;
+
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
 import Raspberry.service.PaymentService;
@@ -11,25 +12,24 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class PaiementHandler implements HttpHandler {
-	private PaymentService paymentService = new PaymentService();
+    private PaymentService paymentService = new PaymentService();
     private UserDAO userDAO = new UserDAO();
-    
+    private final String BASE_PATH = "src/main/webapp/"; // 统一前缀
+
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-    	String query = exchange.getRequestURI().getQuery();
-        
-        // 检测客户端是否需要 JSON
+        String query = exchange.getRequestURI().getQuery();
+
         String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
         boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
 
         String response;
-        
+
         try {
-            // 【逻辑分发】：如果没有参数，显示手动支付的 HTML 表单
             if (query == null || query.trim().isEmpty()) {
-                response = new String(Files.readAllBytes(Paths.get("paiement.html")), "UTF-8");
+                // 🚨 修复路径
+                response = new String(Files.readAllBytes(Paths.get(BASE_PATH + "paiement.html")), "UTF-8");
             } else {
-                // 如果有参数，执行支付扣款逻辑
                 Map<String, String> params = parseQuery(query);
                 String rfidTag = params.get("tag");
                 double amount = Double.parseDouble(params.getOrDefault("amount", "0"));
@@ -48,8 +48,7 @@ public class PaiementHandler implements HttpHandler {
                 }
             }
         } catch (Exception e) {
-            // 这里的错误处理也要小心，如果 processResponse 内部读文件失败，这里也会崩
-            e.printStackTrace(); 
+            e.printStackTrace();
             try {
                 response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
             } catch (Exception fatal) {
@@ -64,22 +63,21 @@ public class PaiementHandler implements HttpHandler {
 
     private String processResponse(boolean isJson, boolean isSuccess, User user, double amount, String title, String msg) throws IOException {
         if (isJson) {
-            return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}", 
-                                 isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
+            return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}",
+                    isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
         }
 
-        // 读取外部 HTML 模板
-        String template = new String(Files.readAllBytes(Paths.get("resultat.html")));
-        
-        // 动态替换占位符
+        // 🚨 修复路径
+        String template = new String(Files.readAllBytes(Paths.get(BASE_PATH + "resultat.html")), "UTF-8");
+
         return template
-            .replace("{{CLASS}}", isSuccess ? "success" : "error")
-            .replace("{{ICON}}", isSuccess ? "✅" : "❌")
-            .replace("{{TITLE}}", title)
-            .replace("{{MESSAGE}}", msg)
-            .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
-            .replace("{{AMOUNT}}", String.format("%.2f", amount))
-            .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
+                .replace("{{CLASS}}", isSuccess ? "success" : "error")
+                .replace("{{ICON}}", isSuccess ? "✅" : "❌")
+                .replace("{{TITLE}}", title)
+                .replace("{{MESSAGE}}", msg)
+                .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
+                .replace("{{AMOUNT}}", String.format("%.2f", amount))
+                .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
     }
 
     private Map<String, String> parseQuery(String query) {

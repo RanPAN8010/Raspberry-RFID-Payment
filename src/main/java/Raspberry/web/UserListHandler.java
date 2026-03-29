@@ -18,7 +18,7 @@ public class UserListHandler implements HttpHandler {
         try {
             // 1. 从数据库获取所有用户
             List<User> users = userDAO.getAllUsers();
-            
+
             // 2. 生成 HTML 表格行
             StringBuilder rows = new StringBuilder();
             if (users == null || users.isEmpty()) {
@@ -29,25 +29,27 @@ public class UserListHandler implements HttpHandler {
                     rows.append("<td>").append(u.getUsername()).append("</td>");
                     rows.append("<td><code>").append(u.getRfidTag()).append("</code></td>");
                     rows.append("<td><strong>€").append(String.format("%.2f", u.getBalance())).append("</strong></td>");
-                    
+
                     // 根据角色显示不同的标签样式
                     String badgeClass = "ADMIN".equals(u.getRole()) ? "badge-admin" : "badge-user";
                     rows.append("<td><span class='badge ").append(badgeClass).append("'>")
-                        .append(u.getRole()).append("</span></td>");
-                    
+                            .append(u.getRole()).append("</span></td>");
+
                     rows.append("</tr>");
                 }
             }
 
-            // 3. 读取模板并替换
-            String template = new String(Files.readAllBytes(Paths.get("liste.html")), "UTF-8");
+            // 3. 🚨 修复路径：读取模板并替换
+            String templatePath = "src/main/webapp/liste.html";
+            String template = new String(Files.readAllBytes(Paths.get(templatePath)), "UTF-8");
             response = template.replace("{{TABLE_ROWS}}", rows.toString());
 
         } catch (Exception e) {
             e.printStackTrace();
-            response = "<html><body><h1>Erreur</h1><p>" + e.getMessage() + "</p></body></html>";
+            response = "<html><body><h1>Erreur lors du chargement de la liste</h1><p>" + e.getMessage() + "</p></body></html>";
         }
 
+        exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
         SimpleHttpServer.sendResponse(exchange, response);
     }
 }

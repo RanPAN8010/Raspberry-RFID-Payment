@@ -12,24 +12,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RechargeHandler implements HttpHandler {
-	private PaymentService paymentService = new PaymentService();
+    private PaymentService paymentService = new PaymentService();
     private UserDAO userDAO = new UserDAO();
-    
+    private final String BASE_PATH = "src/main/webapp/"; // 统一前缀
+
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String query = exchange.getRequestURI().getQuery();
-    	Map<String, String> params = parseQuery(query);
-        
-        // 判断客户端需求 (JSON 还是 HTML)
+        Map<String, String> params = parseQuery(query);
+
         String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
         boolean wantsJson = acceptHeader != null && acceptHeader.contains("application/json");
-        
-        String response;  
+
+        String response;
         try {
             if (query == null || query.trim().isEmpty()) {
                 response = loadTemplate("recharge.html");
             } else {
-            	String tag = params.get("tag");
+                String tag = params.get("tag");
                 String amountStr = params.getOrDefault("amount", "0");
                 double amount = Double.parseDouble(amountStr);
 
@@ -47,7 +47,6 @@ public class RechargeHandler implements HttpHandler {
                 }
             }
         } catch (Exception e) {
-            // 【关键修复】：捕获异常并打印日志，防止 ERR_EMPTY_RESPONSE
             e.printStackTrace();
             try {
                 response = processResponse(wantsJson, false, null, 0, "Erreur Serveur", e.getMessage());
@@ -59,26 +58,27 @@ public class RechargeHandler implements HttpHandler {
         exchange.getResponseHeaders().set("Content-Type", contentType + "; charset=UTF-8");
         SimpleHttpServer.sendResponse(exchange, response);
     }
-    
+
     private String processResponse(boolean isJson, boolean isSuccess, User user, double amount, String title, String msg) throws IOException {
         if (isJson) {
-            return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}", 
-                                 isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
+            return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}",
+                    isSuccess ? "success" : "error", msg, user != null ? user.getBalance() : 0);
         }
         String template = loadTemplate("resultat.html");
-        
+
         return template
-            .replace("{{CLASS}}", isSuccess ? "success" : "error")
-            .replace("{{ICON}}", isSuccess ? "💰" : "❌")
-            .replace("{{TITLE}}", title)
-            .replace("{{MESSAGE}}", msg)
-            .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
-            .replace("{{DETAIL}}", isSuccess ? ("Recharge de €" + String.format("%.2f", amount)) : "Action annulée")
-            .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
+                .replace("{{CLASS}}", isSuccess ? "success" : "error")
+                .replace("{{ICON}}", isSuccess ? "💰" : "❌")
+                .replace("{{TITLE}}", title)
+                .replace("{{MESSAGE}}", msg)
+                .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
+                .replace("{{DETAIL}}", isSuccess ? ("Recharge de €" + String.format("%.2f", amount)) : "Action annulée")
+                .replace("{{BALANCE}}", user != null ? String.format("%.2f", user.getBalance()) : "0.00");
     }
-    
+
     private String loadTemplate(String path) throws IOException {
-        return new String(Files.readAllBytes(Paths.get(path)), "UTF-8");
+        // 🚨 核心修复：自动拼接前缀
+        return new String(Files.readAllBytes(Paths.get(BASE_PATH + path)), "UTF-8");
     }
 
     private Map<String, String> parseQuery(String query) {
@@ -90,5 +90,4 @@ public class RechargeHandler implements HttpHandler {
         }
         return result;
     }
-
 }
