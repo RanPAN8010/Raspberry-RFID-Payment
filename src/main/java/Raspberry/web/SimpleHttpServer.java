@@ -83,4 +83,17 @@ public class SimpleHttpServer {
         os.write(response.getBytes());
         os.close();
     }
+    public static void main(String[] args) {
+        System.out.println("=========================================");
+        System.out.println("   🚀 2026 树莓派智能支付终端 (无头模式启动)  ");
+        System.out.println("=========================================");
+
+        // 1. 唤醒数据库
+        Raspberry.database.DBConnection.getConnection();
+
+        // 2. 启动 8080 端口的网页服务器
+        start(8080);
+
+        System.out.println("✅ 核心系统已就绪！现在请完全通过网页/浏览器控制本机器。");
+    }
 }
