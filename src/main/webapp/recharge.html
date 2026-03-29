@@ -5,21 +5,64 @@
     <title>Recharge de Compte</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6; }
-        .card { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .btn-submit { background: #9b59b6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .card { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px;}
+        input { display: block; width: 90%; padding: 10px; margin: 10px auto; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px;}
+        .btn-submit { background: #9b59b6; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 90%; margin-top: 15px; font-size: 16px;}
+        .btn-submit:hover { background: #8e44ad; }
+
+        /* 去掉了闪烁动画，只保留安静的静态等待颜色 */
+        .waiting-card { border: 2px solid #3498db; background-color: #ebf5fb; }
+        .success-card { border: 2px solid #2ecc71; background-color: #eaeded; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>💰 Recharge de Solde</h2>
-        <form action="/admin/recharge" method="get">
-            <input type="text" name="tag" placeholder="Scanner le Tag (ID)" required>
-            <input type="number" name="amount" placeholder="Montant (€)" step="0.01" required>
-            <button type="submit" class="btn-submit">Confirmer la Recharge</button>
-        </form>
-        <br>
-        <a href="/">Retour à l'accueil</a>
-    </div>
+<div class="card">
+    <h2>💰 Recharge de Solde</h2>
+    <form action="/admin/recharge" method="get">
+
+        <input type="text" id="tagInput" class="waiting-card" name="tag" placeholder="⏳ Attente du badge..." required readonly>
+
+        <input type="number" name="amount" placeholder="Montant (€)" step="0.01" required>
+
+        <button type="submit" class="btn-submit">Confirmer (确认充值)</button>
+    </form>
+    <br>
+    <a href="/">Retour à l'accueil</a>
+</div>
+
+<script>
+    // 网页一加载完毕，就立刻执行自动监听功能
+    window.onload = function() {
+        ecouterBadgeAutomatique();
+    };
+
+    function ecouterBadgeAutomatique() {
+        const tagInput = document.getElementById('tagInput');
+
+        // 复用我们之前写好的 API 接口
+        fetch('/api/scan')
+            .then(response => {
+                if (!response.ok) throw new Error("Erreur serveur");
+                return response.text();
+            })
+            .then(tag => {
+                if (tag && tag.trim() !== "") {
+                    // 读到卡号啦！填入数据并改变输入框颜色为绿色
+                    tagInput.value = tag.trim();
+                    tagInput.classList.remove('waiting-card');
+                    tagInput.classList.add('success-card');
+                    tagInput.placeholder = "✅ Carte lue !";
+                } else {
+                    // 如果没读到，继续重新监听
+                    ecouterBadgeAutomatique();
+                }
+            })
+            .catch(err => {
+                // 如果断网了，提示错误
+                tagInput.classList.remove('waiting-card');
+                tagInput.placeholder = "❌ Connexion perdue.";
+            });
+    }
+</script>
 </body>
 </html>
