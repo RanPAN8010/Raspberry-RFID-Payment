@@ -10,42 +10,61 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gestionnaire HTTP pour l'enregistrement des nouveaux utilisateurs.
+ * Traite l'affichage du formulaire et la soumission des données d'inscription.
+ */
 public class EnregistrementHandler implements HttpHandler {
     private UserDAO userDAO = new UserDAO();
 
+    /**
+     * Gère les requêtes HTTP entrantes pour l'enregistrement.
+     *
+     * @param exchange L'objet HttpExchange contenant la requête et la réponse.
+     * @throws IOException En cas d'erreur lors de la lecture des fichiers ou de l'envoi de la réponse.
+     */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String response;
         try {
             String query = exchange.getRequestURI().getQuery();
 
-            // 1. 如果没有参数，显示注册表单
+            // Si aucun paramètre n'est présent, afficher le formulaire d'enregistrement
             if (query == null || query.trim().isEmpty()) {
                 response = loadHtmlTemplate("enregistrement.html");
             } else {
-                // 2. 处理提交的数据
+                // Traiter les données soumises
                 response = handleRegistration(query);
             }
         } catch (Exception e) {
-            // 关键：捕获所有可能的错误，防止 ERR_EMPTY_RESPONSE
-            e.printStackTrace(); // 这会让错误出现在 docker logs 里
+            // capturer toutes les erreurs possibles pour éviter ERR_EMPTY_RESPONSE
+            e.printStackTrace(); 
             response = "<html><body><h1>Erreur Interne</h1><p>" + e.getMessage() + "</p></body></html>";
         }
-
         SimpleHttpServer.sendResponse(exchange, response);
     }
 
     /**
-     * 读取注册页面的 HTML 模板
+     * Charge le modèle HTML pour la page d'enregistrement.
+     *
+     * @param fileName Nom du fichier HTML à charger.
+     * @return Le contenu du fichier HTML sous forme de chaîne de caractères.
+     * @throws IOException Si le fichier ne peut pas être lu.
      */
     private String loadHtmlTemplate(String fileName) throws IOException {
-    	// 直接抛出异常让 handle() 的 try-catch 处理，避免返回半成品页面
+    	// Lever directement une exception pour qu'elle soit gérée par le try-catch de handle(), 
+    	// afin d'éviter de retourner une page incomplète
         String basePath = "src/main/webapp/";
         byte[] encoded = Files.readAllBytes(Paths.get(basePath+fileName));
         return new String(encoded, "UTF-8");
     }
+    
     /**
-     * 处理具体的注册逻辑
+     * Traite la logique spécifique de l'enregistrement d'un utilisateur.
+     *
+     * @param query La chaîne de requête contenant les paramètres nom et tag.
+     * @return La page HTML de résultat formatée.
+     * @throws IOException En cas d'erreur de chargement du template de résultat.
      */
     private String handleRegistration(String query) throws IOException {
         Map<String, String> params = parseQuery(query);
@@ -53,38 +72,46 @@ public class EnregistrementHandler implements HttpHandler {
         String nom = params.getOrDefault("nom", "Inconnu");
         String tag = params.get("tag");
 
-        // 基础验证：Tag 不能为空
+        // Validation de base : Le Tag ne peut pas être vide
         if (tag == null || tag.trim().isEmpty()) {
             return formatResultPage(false, "Paramètre Manquant", "Le tag RFID est obligatoire.", nom, "N/A", 0.0);
         }
 
         try {
-            // 🚨 核心修改：强制将新用户的初始金额设为 0.0
+            // Modification centrale : forcer le solde initial des nouveaux utilisateurs à 0.0
             double solde = 0.0;
             User user = new User(nom, tag, solde, "USER");
             boolean succes = userDAO.addUser(user);
 
             if (succes) {
-                // 成功：显示绿色成功页
+                // Succès : afficher la page de réussite en vert
                 return formatResultPage(true, "Enregistrement Réussi", "Nouvel utilisateur ajouté au système.", nom, "Compte créé", solde);
             } else {
-                // 失败：Tag 已存在
+                // Échec : Le Tag existe déjà
                 return formatResultPage(false, "Échec de l'enregistrement", "Ce tag RFID est déjà associé à un autre compte.", nom, "Erreur de doublon", 0.0);
             }
         } catch (NumberFormatException e) {
             return formatResultPage(false, "Erreur de Saisie", "Le solde doit être un nombre valide.", nom, "Format invalide", 0.0);
         }
     }
-
+    
     /**
-     * 核心逻辑：读取 resultat.html 并注入注册相关的数据
+     * Injecte les données dans le template resultat.html.
+     *
+     * @param isSuccess Indique si l'opération a réussi.
+     * @param title Le titre de la page.
+     * @param msg Le message principal.
+     * @param user Le nom de l'utilisateur concerné.
+     * @param detail Détails supplémentaires sur l'opération.
+     * @param balance Le solde à afficher.
+     * @return Le contenu HTML final.
+     * @throws IOException Si le template ne peut pas être chargé.
      */
     private String formatResultPage(boolean isSuccess, String title, String msg, String user, String detail, double balance) throws IOException {
         String template = loadHtmlTemplate("resultat.html");
 
         return template
             .replace("{{CLASS}}", isSuccess ? "success" : "error")
-            .replace("{{ICON}}", isSuccess ? "👤" : "❌") // 注册成功用用户图标
             .replace("{{TITLE}}", title)
             .replace("{{MESSAGE}}", msg)
             .replace("{{USER}}", user)
@@ -93,7 +120,10 @@ public class EnregistrementHandler implements HttpHandler {
     }
     
     /**
-     * 解析 URL 参数
+     * Analyse et convertit les paramètres de la requête URL en Map.
+     *
+     * @param query La chaîne de requête brute.
+     * @return Une Map contenant les paires clé-valeur.
      */
     private Map<String, String> parseQuery(String query) {
         Map<String, String> result = new HashMap<>();

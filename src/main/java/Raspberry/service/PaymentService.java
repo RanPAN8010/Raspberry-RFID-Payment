@@ -2,53 +2,68 @@ package Raspberry.service;
 import Raspberry.DAO.UserDAO;
 import Raspberry.model.User;
 
-
+/**
+ * Service de gestion des paiements et des recharges.
+ * Cette classe contient la logique métier pour traiter les transactions financières.
+ */
 public class PaymentService {
     private UserDAO userDAO;
     
+    /**
+     * Constructeur de PaymentService.
+     * Initialise l'objet d'accès aux données utilisateur (UserDAO).
+     */
     public PaymentService() {
         this.userDAO = new UserDAO();
     }
 
     /**
-     * 处理支付请求 (商家功能)
+     * Traite une demande de paiement (Fonctionnalité Marchand).
+     *
+     * @param rfidTag Le tag RFID de l'utilisateur effectuant le paiement.
+     * @param amount  Le montant à débiter.
+     * @return true si le paiement est réussi, sinon false.
      */
     public boolean processPayment(String rfidTag, double amount) {
         User user = userDAO.getUserByRfid(rfidTag);
 
         if (user == null) {
-            System.out.println("❌ 支付失败：未找到该 RFID 对应的账户！");
+            System.out.println("Échec du paiement : aucun compte trouvé pour ce RFID !");
             return false;
         }
         
         if (!user.isActive()) {
-            System.out.println("❌ 支付失败：该账户已被禁用！");
+            System.out.println("Échec du paiement : ce compte a été désactivé !");
             return false;
         }
 
         if (user.getBalance() < amount) {
-            System.out.println("❌ 支付失败：余额不足！当前余额: €" + user.getBalance());
+            System.out.println("Échec du paiement : solde insuffisant ! Solde actuel : €" + user.getBalance());
             return false;
         }
 
         // 扣款逻辑
         double newBalance = user.getBalance() - amount;
         if (userDAO.updateBalance(rfidTag, newBalance)) {
-            System.out.println("✅ 支付成功！扣除: €" + amount + "，剩余余额: €" + newBalance);
+            System.out.println("Paiement réussi ! Débité : €" + amount + ", Solde restant : €" + newBalance);
             userDAO.addTransaction(rfidTag, "PAIEMENT", amount);
             return true;
         } else {
-            System.out.println("❌ 支付失败：系统错误。");
+            System.out.println("Échec du paiement : erreur système.");
             return false;
         }
     }
-
+    
     /**
-     * 处理充值请求 (用户/管理员功能)
+     * Traite une demande de recharge (Fonctionnalité Utilisateur/Administrateur).
+     *
+     * @param rfidTag Le tag RFID du compte à recharger.
+     * @param amount  Le montant à ajouter au solde.
+     * @return true si la recharge est réussie, sinon false.
      */
     public boolean rechargeAccount(String rfidTag, double amount) {
         if (amount <= 0) {
-            System.out.println("❌ 充值金额必须大于 0！");
+            System.out.println("Le montant de la recharge doit être supérieur à 0 !");
             return false;
         }
 
@@ -56,12 +71,12 @@ public class PaymentService {
         if (user != null) {
             double newBalance = user.getBalance() + amount;
             if (userDAO.updateBalance(rfidTag, newBalance)) {
-                System.out.println("✅ 充值成功！当前余额: €" + newBalance);
+                System.out.println("Recharge réussie ! Solde actuel : €" + newBalance);
                 userDAO.addTransaction(rfidTag, "RECHARGE", amount);
                 return true;
             }
         }
-        System.out.println("❌ 充值失败：未找到该用户。");
+        System.out.println("Échec de la recharge : utilisateur non trouvé.");
         return false;
     }
 }

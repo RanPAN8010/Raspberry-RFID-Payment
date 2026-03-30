@@ -13,7 +13,6 @@
         .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
         .back-link:hover { text-decoration: underline; }
 
-        /* 新增：安静等待和成功读取的状态样式 */
         .waiting-card { border: 2px solid #3498db; background-color: #ebf5fb; }
         .success-card { border: 2px solid #2ecc71; background-color: #eaeded; }
     </style>
@@ -29,19 +28,23 @@
         <input type="number" name="amount" placeholder="Montant à débiter (€)" step="0.01" min="0.01" required>
         <button type="submit" class="btn-pay">Confirmer le Paiement</button>
     </form>
-    <a href="/" class="back-link">← Retour au Dashboard</a>
+    <a href="/" class="back-link">← Retour au Tableau de bord </a>
 </div>
 
 <script>
-    // 网页一加载完毕，就立刻执行自动监听功能
+    // Dès que la page est chargée, 
+    // exécuter immédiatement la fonction d'écoute automatique
     window.onload = function() {
         ecouterBadgeAutomatique();
     };
 
+    /**
+     * Appelle l'API de scan et gère les états de l'interface utilisateur.
+     */
     function ecouterBadgeAutomatique() {
         const tagInput = document.getElementById('tagInput');
 
-        // 复用统一的物理刷卡 API
+        // Réutiliser l'API unifiée de scan physique
         fetch('/api/scan')
             .then(response => {
                 if (!response.ok) throw new Error("Erreur serveur");
@@ -49,20 +52,22 @@
             })
             .then(tag => {
                 if (tag && tag.trim() !== "") {
-                    // 读到卡号啦！填入数据并改变输入框颜色为绿色
+                    // Remplir les données et changer la couleur du champ en vert
                     tagInput.value = tag.trim();
                     tagInput.classList.remove('waiting-card');
                     tagInput.classList.add('success-card');
-                    tagInput.placeholder = "✅ Carte lue !";
+                    tagInput.placeholder = "Carte lue !";
                 } else {
-                    // 🚨 核心优化：如果没读到（或者被幽灵线程拦截），等待 1 秒后再试，防止服务器卡死
+                    // si rien n'est lu, attendre 1 seconde 
+                    // avant de réessayer pour éviter de bloquer le serveur
                     setTimeout(ecouterBadgeAutomatique, 1000);
                 }
             })
             .catch(err => {
-                // 如果断网了或发生严重错误，提示并拉长重试时间
+                // En cas de déconnexion ou d'erreur grave,
+                // afficher un message et augmenter le délai de réessai
                 tagInput.classList.remove('waiting-card');
-                tagInput.placeholder = "❌ Connexion perdue.";
+                tagInput.placeholder = "Connexion perdue.";
                 setTimeout(ecouterBadgeAutomatique, 3000);
             });
     }

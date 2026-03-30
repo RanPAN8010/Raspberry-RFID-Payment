@@ -9,29 +9,30 @@
         input { display: block; width: 90%; padding: 10px; margin: 10px auto; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px;}
         .btn-submit { background: #9b59b6; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 90%; margin-top: 15px; font-size: 16px;}
         .btn-submit:hover { background: #8e44ad; }
-
-        /* 去掉了闪烁动画，只保留安静的静态等待颜色 */
+        .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
         .waiting-card { border: 2px solid #3498db; background-color: #ebf5fb; }
         .success-card { border: 2px solid #2ecc71; background-color: #eaeded; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h2>💰 Recharge de Solde</h2>
+    <h2>Recharge de Solde</h2>
     <form action="/admin/recharge" method="get">
 
         <input type="text" id="tagInput" class="waiting-card" name="tag" placeholder="⏳ Attente du badge..." required readonly>
 
         <input type="number" name="amount" placeholder="Montant (€)" step="0.01" required>
 
-        <button type="submit" class="btn-submit">Confirmer (确认充值)</button>
+        <button type="submit" class="btn-submit">Confirmer le chargement</button>
     </form>
     <br>
-    <a href="/">Retour à l'accueil</a>
+    <a href="/" class="back-link">← Retour au Tableau de bord </a>
 </div>
 
 <script>
-    // 网页一加载完毕，就立刻执行自动监听功能
+	// Dès que la page est chargée, 
+	// exécuter immédiatement la fonction d'écoute automatique
     window.onload = function() {
         ecouterBadgeAutomatique();
     };
@@ -39,7 +40,7 @@
     function ecouterBadgeAutomatique() {
         const tagInput = document.getElementById('tagInput');
 
-        // 复用我们之前写好的 API 接口
+        // Réutiliser l'API unifiée de scan physique
         fetch('/api/scan')
             .then(response => {
                 if (!response.ok) throw new Error("Erreur serveur");
@@ -47,18 +48,20 @@
             })
             .then(tag => {
                 if (tag && tag.trim() !== "") {
-                    // 读到卡号啦！填入数据并改变输入框颜色为绿色
+                    // Remplir les données et changer la couleur du champ en vert
                     tagInput.value = tag.trim();
                     tagInput.classList.remove('waiting-card');
                     tagInput.classList.add('success-card');
                     tagInput.placeholder = "✅ Carte lue !";
                 } else {
-                    // 如果没读到，继续重新监听
+                    // si rien n'est lu, attendre 1 seconde 
+                    // avant de réessayer pour éviter de bloquer le serveur
                     ecouterBadgeAutomatique();
                 }
             })
             .catch(err => {
-                // 如果断网了，提示错误
+                // En cas de déconnexion ou d'erreur grave,
+                // afficher un message et augmenter le délai de réessai
                 tagInput.classList.remove('waiting-card');
                 tagInput.placeholder = "❌ Connexion perdue.";
             });

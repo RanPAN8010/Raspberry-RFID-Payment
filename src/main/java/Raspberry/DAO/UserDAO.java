@@ -10,18 +10,28 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Constructeur par défaut de la classe UserDAO.
+ */
 public class UserDAO {
 
+	/**
+     * Constructeur par défaut de la classe UserDAO.
+     */
 	public UserDAO() {
 		// TODO Auto-generated constructor stub
 	}
-    /**
-     * 1. 添加新用户 (对应文档中管理员的功能)
+	
+	/**
+     * Ajoute un nouvel utilisateur dans la base de données.
+     *
+     * @param user L'objet utilisateur à ajouter.
+     * @return true si l'ajout est réussi, sinon false.
      */
     public boolean addUser(User user) {
         String sql = "INSERT INTO users(username, rfid_tag, balance, role, active) VALUES(?, ?, ?, ?, ?)";
-        
-        // try-with-resources 语法，确保数据库连接用完后自动关闭
+        // Syntaxe try-with-resources 
+        //pour garantir la fermeture automatique de la connexion après utilisation
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
@@ -32,25 +42,28 @@ public class UserDAO {
             pstmt.setInt(5, user.isActive() ? 1 : 0); // SQLite 没有 boolean，用 1 和 0 代替
             
             pstmt.executeUpdate();
-            System.out.println("成功添加用户: " + user.getUsername());
+            System.out.println("Ajout de l'utilisateur réussi : " + user.getUsername());
             return true;
             
         } catch (SQLException e) {
-            System.err.println("添加用户失败 (可能是 RFID 已被绑定): " + e.getMessage());
+            System.err.println("Échec de l'ajout de l'utilisateur (peut-être que le RFID est déjà lié) : " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * 2. 通过 RFID 查找用户 (对应文档中刷卡身份验证的核心机制)
+     * Recherche un utilisateur par son tag RFID.
+     *
+     * @param rfidTag Le code du tag RFID.
+     * @return L'objet User correspondant, ou null s'il n'est pas trouvé.
      */
     public User getUserByRfid(String rfidTag) {
         String sql = "SELECT * FROM users WHERE rfid_tag = ?";
         Connection conn = DBConnection.getConnection();
         
-        // 核心修复：如果连接失败，直接返回 null，不要执行后续代码
+        // si la connexion échoue, retourner null directement et ne pas exécuter la suite
         if (conn == null) {
-            System.err.println("无法获取数据库连接，查询中止。");
+            System.err.println("Impossible d'obtenir la connexion à la base de données, requête interrompue.");
             return null; 
         }
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -59,7 +72,8 @@ public class UserDAO {
             ResultSet rs = pstmt.executeQuery();
             
             if (rs.next()) {
-                // 如果在数据库找到了这个 RFID，就把它包装成一个 User 对象返回
+                // Si ce RFID est trouvé dans la base de données, 
+            	// l'encapsuler dans un objet User et le retourner
                 User user = new User();
                 user.setId(rs.getInt("id"));
                 user.setUsername(rs.getString("username"));
@@ -71,15 +85,17 @@ public class UserDAO {
             }
             
         } catch (SQLException e) {
-            System.err.println("查询用户失败: " + e.getMessage());
+            System.err.println("Échec de la recherche de l'utilisateur : " + e.getMessage());
         }
-        
-        // 如果没找到，返回 null
         return null; 
     }
     
-	/**
-     * 更新用户余额 (用于充值和扣款)
+    /**
+     * Met à jour le solde d'un utilisateur.
+     *
+     * @param rfidTag Le tag RFID de l'utilisateur.
+     * @param newBalance Le nouveau montant du solde.
+     * @return true si la mise à jour est réussie, sinon false.
      */
     public boolean updateBalance(String rfidTag, double newBalance) {
         String sql = "UPDATE users SET balance = ? WHERE rfid_tag = ?";
@@ -90,13 +106,17 @@ public class UserDAO {
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
         } catch (SQLException e) {
-            System.err.println("更新余额失败: " + e.getMessage());
+            System.err.println("Échec de la mise à jour du solde : " + e.getMessage());
             return false;
         }
     }
     
-	/**
-     * 记录流水
+    /**
+     * Enregistre une nouvelle transaction dans l'historique.
+     *
+     * @param tag Le tag RFID concerné.
+     * @param type Le type de transaction (ex: recharge, débit).
+     * @param montant Le montant de la transaction.
      */
     public void addTransaction(String tag, String type, double montant) {
         String sql = "INSERT INTO transactions(rfid_tag, type, montant) VALUES(?,?,?)";
@@ -110,22 +130,26 @@ public class UserDAO {
             System.err.println("Erreur d'enregistrement de transaction : " + e.getMessage());
         }
     }
+    
     /**
-     * 获取所有用户列表 (用于管理界面展示)
+     * Récupère la liste de tous les utilisateurs.
+     *
+     * @return Une liste d'objets User.
      */
     public List<User> getAllUsers() {
         List<User> userList = new ArrayList<>();
-        String sql = "SELECT * FROM users ORDER BY id DESC"; // 按 ID 倒序排列，新注册的在前面
-
-        // 核心：手动检查连接
+     // Classer par ID en ordre décroissant, les nouveaux inscrits apparaissent en premier
+        String sql = "SELECT * FROM users ORDER BY id DESC"; 
+        
+        // vérifier manuellement la connexion
         Connection conn = DBConnection.getConnection();
         if (conn == null) {
-            return userList; // 返回空列表而不是 null，防止外部调用报空指针
+        	// Retourner une liste vide au lieu de null 
+        	// pour éviter les erreurs de pointeur nul lors des appels externes
+            return userList; 
         }
-
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
-
             while (rs.next()) {
                 User user = new User();
                 user.setId(rs.getInt("id"));
@@ -138,9 +162,8 @@ public class UserDAO {
                 userList.add(user);
             }
         } catch (SQLException e) {
-            System.err.println("❌ 获取用户列表失败: " + e.getMessage());
+            System.err.println("Échec de la récupération de la liste des utilisateurs : " + e.getMessage());
         }
-        
         return userList;
     }
     

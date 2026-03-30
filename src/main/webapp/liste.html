@@ -14,12 +14,13 @@
         .badge { padding: 5px 10px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
         .badge-user { background: #d5f5e3; color: #27ae60; }
         .badge-admin { background: #fdebd0; color: #e67e22; }
-        .btn-back { display: inline-block; padding: 10px 20px; background: #95a5a6; color: white; text-decoration: none; border-radius: 5px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📋 Liste des Utilisateurs</h1>
+        <h1>Liste des Utilisateurs</h1>
         <table>
             <thead>
                 <tr>
@@ -33,7 +34,7 @@
                 {{TABLE_ROWS}}
             </tbody>
         </table>
-        <a href="/" class="btn-back">返回仪表盘</a>
+        <a href="/" class="back-link">← Retour au Tableau de bord </a>
     </div>
 </body>
 </html>

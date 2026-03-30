@@ -12,6 +12,8 @@
         .details { background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: left; margin-bottom: 25px; border-left: 5px solid #3498db; }
         .details.error { border-left-color: #e74c3c; }
         .details.success { border-left-color: #2ecc71; }
+        .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
         .btn { display: inline-block; padding: 12px 25px; background: #3498db; color: white; text-decoration: none; border-radius: 8px; transition: 0.3s; }
         .btn:hover { background: #2980b9; }
     </style>
@@ -28,7 +30,7 @@
             <p><strong>Nouveau Solde :</strong> €{{BALANCE}}</p>
         </div>
 
-        <a href="/" class="btn">Retour au Tableau de Bord</a>
+        <a href="/" class="back-link">← Retour au Tableau de bord </a>
     </div>
 </body>
 </html>

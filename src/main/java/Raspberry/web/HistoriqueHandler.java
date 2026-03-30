@@ -5,8 +5,18 @@ import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.sql.*;
 
+/**
+ * Gestionnaire HTTP pour l'affichage de l'historique des transactions.
+ * Récupère les données directement depuis la base de données SQLite et génère un tableau HTML.
+ */
 public class HistoriqueHandler implements HttpHandler {
 
+	/**
+     * Gère la requête HTTP pour afficher l'historique.
+     *
+     * @param exchange L'objet HttpExchange contenant la requête et la réponse.
+     * @throws IOException En cas d'erreur d'entrée/sortie.
+     */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         StringBuilder html = new StringBuilder();
@@ -18,10 +28,10 @@ public class HistoriqueHandler implements HttpHandler {
                 .append("tr:nth-child(even){background-color: #f2f2f2;}")
                 .append("a { text-decoration: none; color: #3498db; font-weight: bold; }")
                 .append("</style></head><body>")
-                .append("<h2>📜 Historique des Transactions</h2>")
+                .append("<h2> Historique des Transactions</h2>")
                 .append("<table><tr><th>ID</th><th>Tag</th><th>Type</th><th>Montant</th><th>Date</th></tr>");
 
-        // 直接从数据库读取流水
+        // Lire l'historique des transactions directement depuis la base de données
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:data/payment_system.db");
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM transactions ORDER BY id DESC")) {

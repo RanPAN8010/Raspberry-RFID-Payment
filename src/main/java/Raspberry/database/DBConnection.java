@@ -5,49 +5,55 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * Classe utilitaire pour la gestion de la connexion à la base de données SQLite.
+ * Fournit des méthodes pour obtenir une connexion et initialiser la structure des tables.
+ */
 public class DBConnection {
-    // 数据库文件路径，项目根目录下会自动生成 payment_system.db
+    // Chemin du fichier de la base de données, 
+	// payment_system.db sera généré automatiquement à la racine du projet
     private static final String URL = "jdbc:sqlite:data/payment_system.db";
     private static Connection connection = null;
 
     /**
-     * 获取数据库连接
+     * Obtient la connexion à la base de données.
+     * Si la connexion est nulle ou fermée, elle est initialisée et les tables sont créées si nécessaire.
+     *
+     * @return L'objet Connection actif.
      */
     public static Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {
-                // 加载 SQLite 驱动（现代 JDBC 驱动通常会自动加载，但显式写出更保险）
                 Class.forName("org.sqlite.JDBC");
                 connection = DriverManager.getConnection(URL);
-                System.out.println("成功连接到 SQLite 数据库！");
+                System.out.println("Connexion réussie à la SQLite !");
                 
-                // 首次连接时自动创建表
                 initDatabase();
             }
         } catch (Exception e) {
-            System.err.println("数据库连接失败: " + e.getMessage());
+            System.err.println("Échec de la connexion à la base de données : " + e.getMessage());
         }
         return connection;
     }
-
+    
     /**
-     * 初始化数据库：创建用户表
-     * 满足文档要求：RFID 绑定、余额管理、角色区分 [cite: 3, 6, 12]
+     * Initialise la base de données en créant les tables nécessaires.
+     * Remplit les exigences du document : liaison RFID, gestion du solde et distinction des rôles.
      */
     public static void initDatabase() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS users ("
                 + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "username TEXT NOT NULL,"
-                + "rfid_tag TEXT UNIQUE NOT NULL," // 对应文档的 badge RFID [cite: 3]
-                + "balance REAL DEFAULT 0.0,"      // 对应充值和支付功能 [cite: 9, 10]
-                + "role TEXT CHECK(role IN ('ADMIN', 'USER', 'MERCHANT'))," // 对应三类角色 [cite: 5, 7, 12]
-                + "active INTEGER DEFAULT 1"       // 1 为激活，0 为禁用 
+                + "rfid_tag TEXT UNIQUE NOT NULL," // Correspond au badge RFID
+                + "balance REAL DEFAULT 0.0,"      // Correspond aux fonctions de recharge et de paiement
+                + "role TEXT CHECK(role IN ('ADMIN', 'USER', 'MERCHANT'))," // Correspond aux trois types de rôles
+                + "active INTEGER DEFAULT 1"       // 1 pour actif, 0 pour désactivé
                 + ");";
 
         String sqlTransactions = "CREATE TABLE IF NOT EXISTS transactions ("
                 + " id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + " rfid_tag TEXT NOT NULL,"
-                + " type TEXT NOT NULL," // 'PAIEMENT' 或 'RECHARGE'
+                + " type TEXT NOT NULL," // 'PAIEMENT' ou 'RECHARGE'
                 + " montant REAL NOT NULL,"
                 + " date_heure DATETIME DEFAULT CURRENT_TIMESTAMP"
                 + ");";
@@ -55,9 +61,9 @@ public class DBConnection {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(createTableSQL);
             stmt.execute(sqlTransactions);
-            System.out.println("数据库表结构已准备就绪。");
+            System.out.println("La structure des tables de la base de données est prête.");
         } catch (SQLException e) {
-            System.err.println("创建表失败: " + e.getMessage());
+            System.err.println("Échec de la création des tables :" + e.getMessage());
         }      
     }
 

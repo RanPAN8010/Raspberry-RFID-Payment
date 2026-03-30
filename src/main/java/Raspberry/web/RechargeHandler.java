@@ -11,11 +11,21 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gestionnaire HTTP pour les opérations de recharge de compte.
+ * Permet de créditer le solde d'un utilisateur via son tag RFID.
+ */
 public class RechargeHandler implements HttpHandler {
     private PaymentService paymentService = new PaymentService();
     private UserDAO userDAO = new UserDAO();
-    private final String BASE_PATH = "src/main/webapp/"; // 统一前缀
+    private final String BASE_PATH = "src/main/webapp/";
 
+    /**
+     * Gère les requêtes HTTP pour le module de recharge.
+     *
+     * @param exchange L'objet HttpExchange contenant la requête et la réponse.
+     * @throws IOException En cas d'erreur lors de la lecture des templates ou de l'envoi des données.
+     */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String query = exchange.getRequestURI().getQuery();
@@ -59,6 +69,18 @@ public class RechargeHandler implements HttpHandler {
         SimpleHttpServer.sendResponse(exchange, response);
     }
 
+    /**
+     * Formate la réponse selon le type de contenu demandé (JSON ou HTML).
+     *
+     * @param isJson    Vrai si une réponse JSON est attendue.
+     * @param isSuccess État de la réussite de l'opération.
+     * @param user      L'objet utilisateur concerné.
+     * @param amount    Le montant rechargé.
+     * @param title     Le titre de la page ou du statut.
+     * @param msg       Le message de confirmation ou d'erreur.
+     * @return La réponse formatée.
+     * @throws IOException Si le template HTML est introuvable.
+     */
     private String processResponse(boolean isJson, boolean isSuccess, User user, double amount, String title, String msg) throws IOException {
         if (isJson) {
             return String.format("{\"status\":\"%s\", \"message\":\"%s\", \"balance\":%.2f}",
@@ -68,7 +90,6 @@ public class RechargeHandler implements HttpHandler {
 
         return template
                 .replace("{{CLASS}}", isSuccess ? "success" : "error")
-                .replace("{{ICON}}", isSuccess ? "💰" : "❌")
                 .replace("{{TITLE}}", title)
                 .replace("{{MESSAGE}}", msg)
                 .replace("{{USER}}", user != null ? user.getUsername() : "Inconnu")
@@ -77,7 +98,6 @@ public class RechargeHandler implements HttpHandler {
     }
 
     private String loadTemplate(String path) throws IOException {
-        // 🚨 核心修复：自动拼接前缀
         return new String(Files.readAllBytes(Paths.get(BASE_PATH + path)), "UTF-8");
     }
 

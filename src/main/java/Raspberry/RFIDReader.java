@@ -3,14 +3,22 @@ package Raspberry;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+/**
+ * Classe utilitaire pour l'interaction avec le lecteur de cartes RFID physique.
+ * Appelle un script Python externe pour capturer les données du matériel.
+ */
 public class RFIDReader {
-    /**
-     * 阻塞并调用 Python 脚本，等待真实物理刷卡
+
+	/**
+     * Bloque le thread actuel et appelle un script Python en attendant un scan de carte physique.
+     *
+     * @return Le numéro du tag RFID sous forme de chaîne de caractères, ou null en cas d'échec.
      */
     public static String waitForCardSwipe() {
-        System.out.println("⏳ [硬件层] 正在等待实体卡片靠近读卡器...");
+        System.out.println("En attente de l'approche d'une carte physique du lecteur...");
         try {
-            // 🚨 修复 1：加上 "-u" 参数，强制 Python 无缓存实时输出！
+            // ajout de l'argument "-u" 
+        	// pour forcer une sortie Python en temps réel sans cache !
             ProcessBuilder pb = new ProcessBuilder("python3", "-u", "read_rfid.py");
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -20,19 +28,21 @@ public class RFIDReader {
                 String rfidTag = line.trim();
 
                 if (!rfidTag.isEmpty() && rfidTag.matches("\\d+")) {
-                    System.out.println("🔔 [硬件层] 成功拦截纯净物理卡号: " + rfidTag);
+                    System.out.println("Numéro de carte intercepté avec succès : " + rfidTag);
 
-                    // 读完后立刻强杀 Python 进程，释放硬件引脚！
+                    // Tuer immédiatement le processus Python après lecture 
+                    // pour libérer les broches matérielles
                     process.destroy();
                     return rfidTag;
                 } else {
-                    // 如果读到的是 RuntimeWarning 等杂音，跳过它，继续等下一行
-                    System.out.println("⚠️ [过滤掉非卡号杂音]: " + rfidTag);
+                    // Si un bruit tel que RuntimeWarning est lu, 
+                	// l'ignorer et attendre la ligne suivante
+                    System.out.println("Bruit filtré, non-numéro de carte : " + rfidTag);
                 }
             }
             process.waitFor();
         } catch (Exception e) {
-            System.err.println("❌ 底层读卡模块调用失败: " + e.getMessage());
+            System.err.println("Échec de l'appel au module de lecture : " + e.getMessage());
         }
         return null;
     }

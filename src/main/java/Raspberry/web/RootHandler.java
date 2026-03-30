@@ -7,21 +7,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * Gestionnaire HTTP pour la page d'accueil (racine).
+ * Charge et sert le fichier index.html principal du projet.
+ */
 public class RootHandler implements HttpHandler {
 
+	/**
+     * Gère la requête HTTP pour l'accès à la racine du serveur.
+     *
+     * @param exchange L'objet HttpExchange contenant la requête et la réponse.
+     * @throws IOException En cas d'erreur de lecture de fichier ou d'envoi de la réponse.
+     */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // 🚨 修复路径，指向 webapp 文件夹
         Path path = Paths.get("src/main/webapp/index.html");
         String content;
 
         if (Files.exists(path)) {
-            // 读取 HTML 文件内容
+            // Lire le contenu du fichier HTML
             content = new String(Files.readAllBytes(path), "UTF-8");
         } else {
-            // 如果找不到文件，显示一个备用的简单页面
+            // Si le fichier est introuvable, afficher une page simple de secours
             content = "<html><body style='text-align:center; padding:50px; font-family:sans-serif;'>" +
-                    "<h1>⚠️ Erreur de configuration</h1>" +
+                    "<h1>Erreur de configuration</h1>" +
                     "<p>Le fichier <b>index.html</b> est introuvable dans <i>" + path.toAbsolutePath() + "</i></p>" +
                     "<p>Veuillez vérifier que vous exécutez le programme depuis le dossier racine du projet.</p>" +
                     "</body></html>";

@@ -9,7 +9,8 @@
         input { display: block; width: 90%; padding: 10px; margin: 10px auto; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px;}
         .btn-save { background: #e67e22; color: white; border: none; padding: 12px 20px; cursor: pointer; font-weight: bold; width: 90%; margin-top: 15px; border-radius: 5px; font-size: 16px;}
         .btn-save:hover { background: #d35400; }
-
+        .back-link { display: inline-block; margin-top: 20px; color: #7f8c8d; text-decoration: none; font-size: 0.9em; }
+        .back-link:hover { text-decoration: underline; }
         .waiting-card { border: 2px solid #3498db; animation: pulse 2s infinite; background-color: #ebf5fb; }
         .success-card { border: 2px solid #2ecc71; background-color: #eaeded; }
     </style>
@@ -22,14 +23,15 @@
 
         <input type="text" id="tagInput" class="waiting-card" name="tag" placeholder="⏳ Attente du badge..." required readonly>
 
-        <button type="submit" class="btn-save">Enregistrer </button>
+        <button type="submit" class="btn-save"> Enregistrer </button>
     </form>
     <br>
-    <a href="/">Retour à l'accueil</a>
+    <a href="/" class="back-link">← Retour au Tableau de bord </a>
 </div>
 
 <script>
-    // 网页一加载完毕，就立刻执行自动监听功能
+    // Dès que la page est chargée, exécuter immédiatement la fonction 
+    // d'écoute automatique
     window.onload = function() {
         ecouterBadgeAutomatique();
     };
@@ -37,7 +39,7 @@
     function ecouterBadgeAutomatique() {
         const tagInput = document.getElementById('tagInput');
 
-        // 悄悄向树莓派发送请求，要求开启物理读卡器
+        // Envoyer une requête au Raspberry Pi pour activer le lecteur physique
         fetch('/api/scan')
             .then(response => {
                 if (!response.ok) throw new Error("Erreur serveur");
@@ -45,20 +47,20 @@
             })
             .then(tag => {
                 if (tag && tag.trim() !== "") {
-                    // 读到卡号啦！填入数据并改变输入框颜色为绿色
+                    // Remplir les données et changer la couleur du champ en vert
                     tagInput.value = tag.trim();
                     tagInput.classList.remove('waiting-card');
                     tagInput.classList.add('success-card');
-                    tagInput.placeholder = "✅ Carte lue !";
+                    tagInput.placeholder = " Carte lue !";
                 } else {
-                    // 如果没读到，继续重新监听
+                    // Si rien n'est lu, recommencer l'écoute
                     ecouterBadgeAutomatique();
                 }
             })
             .catch(err => {
-                // 如果断网了，提示错误
+                // En cas de perte de connexion, afficher une erreur
                 tagInput.classList.remove('waiting-card');
-                tagInput.placeholder = "❌ Connexion perdue.";
+                tagInput.placeholder = "Connexion perdue.";
             });
     }
 </script>
