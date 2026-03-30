@@ -31,12 +31,15 @@
 </div>
 
 <script>
-	// Dès que la page est chargée, 
-	// exécuter immédiatement la fonction d'écoute automatique
+    // Dès que la page est chargée,
+    // exécuter immédiatement la fonction d'écoute automatique
     window.onload = function() {
         ecouterBadgeAutomatique();
     };
 
+    /**
+     * Appelle l'API de scan et gère les états de l'interface utilisateur.
+     */
     function ecouterBadgeAutomatique() {
         const tagInput = document.getElementById('tagInput');
 
@@ -52,18 +55,19 @@
                     tagInput.value = tag.trim();
                     tagInput.classList.remove('waiting-card');
                     tagInput.classList.add('success-card');
-                    tagInput.placeholder = "✅ Carte lue !";
+                    tagInput.placeholder = "Carte lue !";
                 } else {
-                    // si rien n'est lu, attendre 1 seconde 
+                    // si rien n'est lu, attendre 1 seconde
                     // avant de réessayer pour éviter de bloquer le serveur
-                    ecouterBadgeAutomatique();
+                    setTimeout(ecouterBadgeAutomatique, 1000);
                 }
             })
             .catch(err => {
                 // En cas de déconnexion ou d'erreur grave,
                 // afficher un message et augmenter le délai de réessai
                 tagInput.classList.remove('waiting-card');
-                tagInput.placeholder = "❌ Connexion perdue.";
+                tagInput.placeholder = "Connexion perdue.";
+                setTimeout(ecouterBadgeAutomatique, 3000);
             });
     }
 </script>

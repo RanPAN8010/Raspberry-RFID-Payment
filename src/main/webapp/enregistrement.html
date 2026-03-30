@@ -30,16 +30,19 @@
 </div>
 
 <script>
-    // Dès que la page est chargée, exécuter immédiatement la fonction 
-    // d'écoute automatique
+    // Dès que la page est chargée,
+    // exécuter immédiatement la fonction d'écoute automatique
     window.onload = function() {
         ecouterBadgeAutomatique();
     };
 
+    /**
+     * Appelle l'API de scan et gère les états de l'interface utilisateur.
+     */
     function ecouterBadgeAutomatique() {
         const tagInput = document.getElementById('tagInput');
 
-        // Envoyer une requête au Raspberry Pi pour activer le lecteur physique
+        // Réutiliser l'API unifiée de scan physique
         fetch('/api/scan')
             .then(response => {
                 if (!response.ok) throw new Error("Erreur serveur");
@@ -51,16 +54,19 @@
                     tagInput.value = tag.trim();
                     tagInput.classList.remove('waiting-card');
                     tagInput.classList.add('success-card');
-                    tagInput.placeholder = " Carte lue !";
+                    tagInput.placeholder = "Carte lue !";
                 } else {
-                    // Si rien n'est lu, recommencer l'écoute
-                    ecouterBadgeAutomatique();
+                    // si rien n'est lu, attendre 1 seconde
+                    // avant de réessayer pour éviter de bloquer le serveur
+                    setTimeout(ecouterBadgeAutomatique, 1000);
                 }
             })
             .catch(err => {
-                // En cas de perte de connexion, afficher une erreur
+                // En cas de déconnexion ou d'erreur grave,
+                // afficher un message et augmenter le délai de réessai
                 tagInput.classList.remove('waiting-card');
                 tagInput.placeholder = "Connexion perdue.";
+                setTimeout(ecouterBadgeAutomatique, 3000);
             });
     }
 </script>
